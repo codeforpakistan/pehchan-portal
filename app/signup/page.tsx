@@ -5,6 +5,8 @@ import { X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from 'next/navigation'
+import { useToast } from "@/hooks/use-toast"
 
 enum RegistrationStep {
   EnterContact,
@@ -14,12 +16,21 @@ enum RegistrationStep {
   Success
 }
 
+// Add this validation function at the top of your component
+const isEmail = (value: string) => {
+  return value.includes('@')
+}
+
 export default function Component() {
   const [currentStep, setCurrentStep] = useState<RegistrationStep>(RegistrationStep.EnterContact)
   const [contact, setContact] = useState('')
   const [verificationCode, setVerificationCode] = useState('')
   const [cnic, setCNIC] = useState('')
   const [fullName, setFullName] = useState('')
+  const [password, setPassword] = useState('')
+  const [phone, setPhone] = useState('')
+  const router = useRouter()
+  const { toast } = useToast()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,7 +61,19 @@ export default function Component() {
     switch (currentStep) {
       case RegistrationStep.EnterContact:
         return (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={(e) => {
+            e.preventDefault()
+            // Validate contact format
+            if (!isEmail(contact) && !contact.startsWith('+92')) {
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Please enter a valid email or phone number (+92XXXXXXXXXX)",
+              })
+              return
+            }
+            setCurrentStep(currentStep + 1)
+          }}>
             <div className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="contact" className="text-sm font-medium">
@@ -98,7 +121,45 @@ export default function Component() {
         )
       case RegistrationStep.BasicInfo:
         return (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            try {
+              const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  fullName,
+                  email: isEmail(contact) ? contact : '', // Only send email if it's an email
+                  phone: !isEmail(contact) ? contact : phone, // Use contact as phone if it's a phone number
+                  cnic,
+                  password,
+                }),
+              })
+
+              const data = await response.json()
+
+              if (!response.ok) {
+                throw new Error(data.message || 'Registration failed')
+              }
+
+              toast({
+                title: "Success",
+                description: "Registration successful! Please log in.",
+              })
+
+              router.push('/login')
+
+              // setCurrentStep(RegistrationStep.NADRAVerisys)
+            } catch (error: any) {
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: error.message,
+              })
+            }
+          }}>
             <div className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="cnic" className="text-sm font-medium">
@@ -124,28 +185,52 @@ export default function Component() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <label htmlFor="phone" className="text-sm font-medium">
+                  Enter your phone number
+                </label>
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Phone number"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium">
+                  Enter your password
+                </label>
+                <Input
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                />
+              </div>
               <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                 Submit
               </Button>
             </div>
           </form>
         )
-      case RegistrationStep.NADRAVerisys:
-        return (
-          <div className="space-y-4">
-            <p className="text-sm">
-              Your personal information will be verified with NADRA. We can only accept information that have been verified with NADRA.
-            </p>
-            <p className="font-semibold">NADRA Verification Cost</p>
-            <p>Rs.150</p>
-            <Button onClick={() => setCurrentStep(RegistrationStep.Success)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              Pay for NADRA Verification
-            </Button>
-            <Button variant="outline" className="w-full">
-              Skip for now
-            </Button>
-          </div>
-        )
+      // case RegistrationStep.NADRAVerisys:
+      //   return (
+      //     <div className="space-y-4">
+      //       <p className="text-sm">
+      //         Your personal information will be verified with NADRA. We can only accept information that have been verified with NADRA.
+      //       </p>
+      //       <p className="font-semibold">NADRA Verification Cost</p>
+      //       <p>Rs.150</p>
+      //       <Button onClick={() => setCurrentStep(RegistrationStep.Success)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+      //         Pay for NADRA Verification
+      //       </Button>
+      //       <Button variant="outline" className="w-full">
+      //         Skip for now
+      //       </Button>
+      //     </div>
+      //   )
       case RegistrationStep.Success:
         return (
           <div className="space-y-4">

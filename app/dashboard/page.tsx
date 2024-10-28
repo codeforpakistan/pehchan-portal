@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bell, FileText, LogOut, Menu, Settings, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,21 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 export default function Component() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [authInfo, setAuthInfo] = useState<any>(null)
+
+  useEffect(() => {
+    const fetchAuthInfo = async () => {
+      try {
+        const response = await fetch('/api/auth/check')
+        const data = await response.json()
+        setAuthInfo(data)
+      } catch (error) {
+        console.error('Failed to fetch auth info:', error)
+      }
+    }
+
+    fetchAuthInfo()
+  }, [])
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
@@ -49,6 +64,19 @@ export default function Component() {
             <Menu className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Debug Auth Info */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Auth Debug Info</CardTitle>
+            <CardDescription>Current authentication status and details</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <pre className="bg-secondary p-4 rounded-md overflow-auto max-h-[300px]">
+              {JSON.stringify(authInfo, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
 
         {/* User Profile Summary */}
         <Card className="mb-6">

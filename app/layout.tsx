@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import { ToasterProvider } from "@/app/components/providers/toaster-provider"
 
 
 export const metadata: Metadata = {
@@ -47,7 +47,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <div className="relative flex min-h-screen flex-col">
               <SiteHeader />
               <div className="flex-1">{children}</div>
-              <SiteFooter />
+              <ToasterProvider />
+              <SiteFooter />            
             </div>
             <TailwindIndicator />
           </ThemeProvider>

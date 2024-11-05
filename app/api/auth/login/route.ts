@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { KEYCLOAK_CONFIG, KEYCLOAK_URLS } from '@/lib/keycloak-config'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
@@ -55,10 +56,25 @@ export async function POST(request: Request) {
 
     const userInfo = await userInfoResponse.json()
 
+    // Get additional user data from Supabase
+    const { data: supabaseUser, error: supabaseError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('keycloak_id', userInfo.sub)
+      .single()
+
+    if (supabaseError) {
+      console.error('Failed to fetch Supabase user data:', supabaseError)
+      // Don't throw error, just log it - we still want login to succeed
+    }
+
     // Create the response with cookies
     const response = NextResponse.json({ 
       success: true,
-      user: userInfo 
+      user: {
+        ...userInfo,
+        profile: supabaseUser || null // Add Supabase data if available
+      }
     })
 
     // Set secure cookies

@@ -5,12 +5,12 @@ import { supabase } from '@/lib/supabase'
 export async function GET() {
   try {
     const accessToken = cookies().get('access_token')?.value
-
+    
     if (!accessToken) {
       return NextResponse.json({ isAuthenticated: false })
     }
 
-    // Get Keycloak user info
+    // Get fresh user info from Keycloak
     const userInfoResponse = await fetch(
       `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
       {
@@ -26,7 +26,7 @@ export async function GET() {
 
     const keycloakUser = await userInfoResponse.json()
 
-    // Get Supabase profile data
+    // Get fresh Supabase profile data
     const { data: supabaseUser, error: supabaseError } = await supabase
       .from('users')
       .select('*')
@@ -40,13 +40,12 @@ export async function GET() {
     return NextResponse.json({
       isAuthenticated: true,
       user: {
-        ...keycloakUser,  // Keep all Keycloak data
-        profile: supabaseUser || null  // Add Supabase data under profile key
+        ...keycloakUser,
+        profile: supabaseUser || null
       }
     })
-
   } catch (error) {
-    console.error('Auth check error:', error)
+    console.error('Auth refresh error:', error)
     return NextResponse.json({ isAuthenticated: false })
   }
-}
+} 

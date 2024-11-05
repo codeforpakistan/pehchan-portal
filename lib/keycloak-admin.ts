@@ -14,9 +14,7 @@ class KeycloakAdmin {
   async init() {
     try {
       await this.adminClient.auth({
-        username: 'pehchan_admin',
-        password: 'pehchan@#$',
-        grantType: 'password',
+        grantType: 'client_credentials',
         clientId: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID,
         clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
       } as Credentials)

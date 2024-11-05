@@ -203,6 +203,7 @@ export default function Component() {
                 </label>
                 <Input
                   id="password"
+                  type='password'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"

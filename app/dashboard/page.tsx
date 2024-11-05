@@ -7,10 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useRouter } from 'next/navigation'
+import { useToast } from "@/hooks/use-toast"
 
 export default function Component() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [authInfo, setAuthInfo] = useState<any>(null)
+  const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     const fetchAuthInfo = async () => {
@@ -18,6 +22,16 @@ export default function Component() {
         const response = await fetch('/api/auth/check')
         const data = await response.json()
         setAuthInfo(data)
+        // Check if user is not authenticated
+        if (data.isAuthenticated === false) {
+          toast({
+            variant: "destructive",
+            title: "Access Denied",
+            description: "Please log in to access the dashboard",
+          })
+          router.push('/')
+          return
+        }
       } catch (error) {
         console.error('Failed to fetch auth info:', error)
       }
@@ -27,6 +41,33 @@ export default function Component() {
   }, [])
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Logout failed')
+      }
+
+      toast({
+        title: "Success",
+        description: "Logged out successfully",
+      })
+
+      // Redirect to login page
+      router.push('/login')
+      router.refresh()
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to logout",
+      })
+    }
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -49,7 +90,11 @@ export default function Component() {
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </Button>
-          <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleLogout}
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>

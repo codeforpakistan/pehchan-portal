@@ -40,7 +40,7 @@ export default function IndexPage() {
           <div className="relative hidden md:block">
             <div className="absolute inset-0 bg-green-200 rounded-full opacity-20 blur-3xl"></div>
             <Image
-              src="/hero-illustration.png"
+              src="/images/hero-illustration.png"
               alt="Digital Pakistan Illustration"
               width={500}
               height={500}

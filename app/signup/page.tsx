@@ -63,14 +63,17 @@ export default function Component() {
         return (
           <form onSubmit={(e) => {
             e.preventDefault()
-            // Validate contact format
-            if (!isEmail(contact) && !contact.startsWith('+92')) {
-              toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Please enter a valid email or phone number (+92XXXXXXXXXX)",
-              })
-              return
+            if (!isEmail(contact)) {
+              if (!contact.startsWith('+92')) {
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Please enter a valid email or phone number (+92XXXXXXXXXX)",
+                })
+                return
+              }
+              // If it's a valid phone number, pre-set it
+              setPhone(contact)
             }
             setCurrentStep(currentStep + 1)
           }}>
@@ -131,8 +134,8 @@ export default function Component() {
                 },
                 body: JSON.stringify({
                   fullName,
-                  email: isEmail(contact) ? contact : '', // Only send email if it's an email
-                  phone: !isEmail(contact) ? contact : phone, // Use contact as phone if it's a phone number
+                  email: isEmail(contact) ? contact : '',
+                  phone: contact.startsWith('+92') ? contact : phone,
                   cnic,
                   password,
                 }),
@@ -185,18 +188,20 @@ export default function Component() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <label htmlFor="phone" className="text-sm font-medium">
-                  Enter your phone number
-                </label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone number"
-                  required
-                />
-              </div>
+              {!contact.startsWith('+92') && (
+                <div className="space-y-2">
+                  <label htmlFor="phone" className="text-sm font-medium">
+                    Enter your phone number
+                  </label>
+                  <Input
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone number"
+                    required
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <label htmlFor="password" className="text-sm font-medium">
                   Enter your password

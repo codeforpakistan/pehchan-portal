@@ -1,27 +1,52 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import jwt from 'jsonwebtoken'
+import { supabase } from '@/lib/supabase'
 
 export async function GET() {
-  const cookieStore = cookies()
-  const accessToken = cookieStore.get('access_token')?.value
-  const refreshToken = cookieStore.get('refresh_token')?.value
+  try {
+    const accessToken = cookies().get('access_token')?.value
 
-  let decodedToken = null
-  if (accessToken) {
-    try {
-      // Decode without verification since we don't have the public key
-      decodedToken = jwt.decode(accessToken)
-    } catch (error) {
-      console.error('Token decode error:', error)
+    if (!accessToken) {
+      return NextResponse.json({ isAuthenticated: false })
     }
-  }
 
-  return NextResponse.json({
-    isAuthenticated: !!accessToken,
-    tokenInfo: decodedToken,
-    accessTokenExists: !!accessToken,
-    refreshTokenExists: !!refreshToken,
-    cookies: Object.fromEntries(cookieStore.getAll().map(c => [c.name, c.value]))
-  })
+    // Get Keycloak user info
+    const userInfoResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    )
+
+    if (!userInfoResponse.ok) {
+      return NextResponse.json({ isAuthenticated: false })
+    }
+
+    const keycloakUser = await userInfoResponse.json()
+
+    // Get Supabase profile data
+    const { data: supabaseUser, error: supabaseError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('keycloak_id', keycloakUser.sub)
+      .single()
+
+    if (supabaseError) {
+      console.error('Failed to fetch Supabase user data:', supabaseError)
+    }
+
+    return NextResponse.json({
+      isAuthenticated: true,
+      user: {
+        ...keycloakUser,  // Keep all Keycloak data
+        profile: supabaseUser || null  // Add Supabase data under profile key
+      }
+    })
+
+  } catch (error) {
+    console.error('Auth check error:', error)
+    return NextResponse.json({ isAuthenticated: false })
+  }
 }

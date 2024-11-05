@@ -10,9 +10,24 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRouter } from 'next/navigation'
 import { useToast } from "@/hooks/use-toast"
 
+interface UserProfile {
+  sub?: string
+  email?: string
+  name?: string
+  profile?: {
+    full_name: string
+    cnic: string
+    phone: string
+    avatar_url?: string
+    // ... other Supabase fields
+  }
+  // ... other Keycloak fields
+}
+
 export default function Component() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [authInfo, setAuthInfo] = useState<any>(null)
+  const [authInfo, setAuthInfo] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -21,8 +36,7 @@ export default function Component() {
       try {
         const response = await fetch('/api/auth/check')
         const data = await response.json()
-        setAuthInfo(data)
-        // Check if user is not authenticated
+        
         if (data.isAuthenticated === false) {
           toast({
             variant: "destructive",
@@ -32,13 +46,26 @@ export default function Component() {
           router.push('/')
           return
         }
+
+        setAuthInfo(data.user)
       } catch (error) {
         console.error('Failed to fetch auth info:', error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load user information",
+        })
+      } finally {
+        setIsLoading(false)
       }
     }
 
     fetchAuthInfo()
   }, [])
+
+  if (isLoading) {
+    return <div>Loading...</div> // Or a better loading component
+  }
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
@@ -110,7 +137,37 @@ export default function Component() {
           </Button>
         </div>
 
-        {/* Debug Auth Info */}
+        {/* User Profile Summary */}
+        <Card className="mb-6">
+          <CardContent className="flex items-center space-x-4 pt-6">
+            <Avatar className="h-16 w-16">
+              <AvatarImage 
+                src={authInfo?.profile?.avatar_url || "/placeholder.svg"} 
+                alt={authInfo?.profile?.full_name || "User"} 
+              />
+              <AvatarFallback>
+                {authInfo?.profile?.full_name
+                  ?.split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .toUpperCase() || 'UN'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="text-2xl font-bold">
+                Welcome, {authInfo?.profile?.full_name || authInfo?.name || 'User'}
+              </h2>
+              <p className="text-muted-foreground">
+                CNIC: {authInfo?.profile?.cnic || 'Not provided'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {authInfo?.email}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Debug Auth Info - Keep this during development */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Auth Debug Info</CardTitle>
@@ -120,20 +177,6 @@ export default function Component() {
             <pre className="bg-secondary p-4 rounded-md overflow-auto max-h-[300px]">
               {JSON.stringify(authInfo, null, 2)}
             </pre>
-          </CardContent>
-        </Card>
-
-        {/* User Profile Summary */}
-        <Card className="mb-6">
-          <CardContent className="flex items-center space-x-4 pt-6">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src="/placeholder.svg" alt="User" />
-              <AvatarFallback>UN</AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="text-2xl font-bold">Welcome, Ali Raza</h2>
-              <p className="text-muted-foreground">CNIC: 17301-6693662-9</p>
-            </div>
           </CardContent>
         </Card>
 

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 import { keycloakAdmin } from '@/lib/keycloak-admin'
 
 export async function POST(request: Request) {
@@ -34,12 +35,32 @@ export async function POST(request: Request) {
 
     // Get Keycloak user ID
     const keycloakUser = await keycloakAdmin.getUserByEmail(email)
+    console.log('Keycloak user:', keycloakUser)
     
     if (!keycloakUser) {
       throw new Error('User creation failed')
     }
 
-    // Here you can also store the user in your database with keycloakUser.id
+    // Create user in Supabase
+    const { data: supabaseUser, error: supabaseError } = await supabase
+      .from('users')
+      .insert({
+        keycloak_id: keycloakUser.id,
+        full_name: fullName,
+        email: email,
+        phone: phone,
+        cnic: cnic,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (supabaseError) {
+      console.error('Supabase user creation failed:', supabaseError)
+      // You might want to delete the Keycloak user if Supabase insertion fails
+      throw new Error('Failed to create user profile')
+    }
 
     return NextResponse.json({
       success: true,

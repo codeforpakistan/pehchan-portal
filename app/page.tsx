@@ -24,7 +24,7 @@ export default function IndexPage() {
               Welcome to <span className="text-green-600">Pehchan</span>
             </h1>
             <p className="text-xl text-gray-600 max-w-md">
-              Empowering Pakistan's Digital Future: Your Secure and Seamless Digital Identity Platform
+              Empowering Pakistan&apos;s Digital Future: Your Secure and Seamless Digital Identity Platform
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <PehchanButton onClick={() => router.push('/login')} />

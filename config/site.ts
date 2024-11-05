@@ -13,6 +13,10 @@ export const siteConfig = {
       title: "Sign Up",
       href: "/signup",
     },
+    {
+      title: "Login",
+      href: "/login",
+    },
   ],
   links: {
     twitter: "https://twitter.com/shadcn",

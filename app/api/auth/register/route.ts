@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       lastName,
       attributes: {
         phoneNumber: [phone],
-        cnic: [cnic],
+        CNIC: [cnic],  // Changed from cnic to CNIC to match Keycloak config
       },
       credentials: [
         {

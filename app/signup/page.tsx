@@ -25,10 +25,12 @@ export default function Component() {
   const [currentStep, setCurrentStep] = useState<RegistrationStep>(RegistrationStep.EnterContact)
   const [contact, setContact] = useState('')
   const [verificationCode, setVerificationCode] = useState('')
+  const [generatedCode, setGeneratedCode] = useState('')
   const [cnic, setCNIC] = useState('')
   const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const router = useRouter()
   const { toast } = useToast()
 
@@ -63,15 +65,20 @@ export default function Component() {
         return (
           <form onSubmit={(e) => {
             e.preventDefault()
-            // Validate contact format
-            if (!isEmail(contact) && !contact.startsWith('+92')) {
-              toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Please enter a valid email or phone number (+92XXXXXXXXXX)",
-              })
-              return
+            if (!isEmail(contact)) {
+              if (!contact.startsWith('+92')) {
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Please enter a valid email or phone number (+92XXXXXXXXXX)",
+                })
+                return
+              }
+              setPhone(contact)
             }
+            const code = generateVerificationCode();
+            setGeneratedCode(code);
+            setVerificationCode(code);
             setCurrentStep(currentStep + 1)
           }}>
             <div className="space-y-4">
@@ -98,7 +105,7 @@ export default function Component() {
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div className="bg-secondary text-secondary-foreground p-2 rounded-md mb-4 flex items-center">
-                <span>Verification Code Sent</span>
+                <span>Demo Code: {generatedCode}</span>
                 <X className="w-4 h-4 ml-auto" />
               </div>
               <div className="space-y-2">
@@ -131,8 +138,8 @@ export default function Component() {
                 },
                 body: JSON.stringify({
                   fullName,
-                  email: isEmail(contact) ? contact : '', // Only send email if it's an email
-                  phone: !isEmail(contact) ? contact : phone, // Use contact as phone if it's a phone number
+                  email: isEmail(contact) ? contact : email,
+                  phone: !isEmail(contact) ? contact : phone,
                   cnic,
                   password,
                 }),
@@ -185,18 +192,35 @@ export default function Component() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <label htmlFor="phone" className="text-sm font-medium">
-                  Enter your phone number
-                </label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone number"
-                  required
-                />
-              </div>
+              {!isEmail(contact) && (
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">
+                    Enter your email address
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email address"
+                    required
+                  />
+                </div>
+              )}
+              {isEmail(contact) && (
+                <div className="space-y-2">
+                  <label htmlFor="phone" className="text-sm font-medium">
+                    Enter your phone number
+                  </label>
+                  <Input
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+92XXXXXXXXXX"
+                    required
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <label htmlFor="password" className="text-sm font-medium">
                   Enter your password
@@ -245,6 +269,10 @@ export default function Component() {
           </div>
         )
     }
+  }
+
+  const generateVerificationCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
   return (

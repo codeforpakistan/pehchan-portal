@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { createLoginUrl } from '@/lib/keycloak-config'
 import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
@@ -7,6 +6,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('client_id')
     const redirectUri = searchParams.get('redirect_uri')
+    const serviceName = searchParams.get('service_name')
     
     if (!clientId || !redirectUri) {
       return NextResponse.json(
@@ -15,27 +15,29 @@ export async function GET(request: Request) {
       )
     }
 
-    // Generate a state parameter to prevent CSRF
-    const state = Math.random().toString(36).substring(7)
-    
-    // Store the original redirect URI and client ID in cookies
-    const response = NextResponse.redirect(createLoginUrl(state))
-    
-    response.cookies.set('oauth_state', state, {
+    // Store client information in cookies for later use
+    const cookieStore = cookies()
+    cookieStore.set('oauth_client_id', clientId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 3600 // 1 hour
     })
-
-    response.cookies.set('oauth_redirect_uri', redirectUri, {
+    
+    cookieStore.set('oauth_redirect_uri', redirectUri, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 3600
     })
 
-    return response
+    // Redirect to login page with service name
+    const loginUrl = new URL('/login', request.url)
+    if (serviceName) {
+      loginUrl.searchParams.set('service_name', serviceName)
+    }
+
+    return NextResponse.redirect(loginUrl)
   } catch (error) {
     console.error('Authorization error:', error)
     return NextResponse.json(

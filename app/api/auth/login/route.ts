@@ -3,11 +3,9 @@ import { KEYCLOAK_CONFIG, KEYCLOAK_URLS } from '@/lib/keycloak-config'
 
 export async function POST(request: Request) {
   try {
-    const { username, password } = await request.json()
+    const { username, password, clientId, redirectUri } = await request.json()
 
-    console.log('Login attempt for:', username)
-    console.log('Keycloak URL:', KEYCLOAK_URLS.TOKEN)
-    console.log('Client ID:', KEYCLOAK_CONFIG.CLIENT_ID)
+    console.log('Login request:', { username, clientId, redirectUri }) // Debug log
 
     const tokenResponse = await fetch(KEYCLOAK_URLS.TOKEN, {
       method: 'POST',
@@ -24,8 +22,6 @@ export async function POST(request: Request) {
       }),
     })
 
-    console.log('Keycloak response status:', tokenResponse.status)
-    
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
       console.error('Keycloak error response:', errorText)
@@ -33,25 +29,39 @@ export async function POST(request: Request) {
     }
 
     const tokens = await tokenResponse.json()
-    console.log('Token received:', tokens.access_token ? 'Yes' : 'No')
 
-    const apiResponse = NextResponse.json({ isAuthenticated: true })
+    // If this is an SSO login request
+    if (clientId && redirectUri) {
+      console.log('Processing SSO redirect to:', redirectUri)
+
+      // Create the redirect URL with tokens
+      const finalRedirectUrl = new URL(redirectUri)
+      finalRedirectUrl.searchParams.set('access_token', tokens.access_token)
+      finalRedirectUrl.searchParams.set('id_token', tokens.id_token || '')
+      
+      return NextResponse.json({ 
+        redirect: finalRedirectUrl.toString() 
+      })
+    }
+
+    // Regular Pehchan login
+    const response = NextResponse.json({ isAuthenticated: true })
     
-    apiResponse.cookies.set('access_token', tokens.access_token, {
+    response.cookies.set('access_token', tokens.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: tokens.expires_in
     })
     
-    apiResponse.cookies.set('refresh_token', tokens.refresh_token, {
+    response.cookies.set('refresh_token', tokens.refresh_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: tokens.refresh_expires_in
     })
 
-    return apiResponse
+    return response
 
   } catch (error) {
     console.error('Login error:', error)

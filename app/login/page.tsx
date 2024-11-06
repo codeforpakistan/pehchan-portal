@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-
+import { Label } from "@/components/ui/label"
 export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -36,44 +36,41 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // First, validate email format
-      if (!formData.username.includes('@')) {
-        throw new Error('Please enter a valid email address')
-      }
-
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+          ...(clientId && { clientId }),
+          ...(redirectUri && { redirectUri }),
+        }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        // Handle specific Keycloak errors
-        if (data.error === 'invalid_grant') {
-          throw new Error('Invalid email or password')
-        }
-        if (data.error === 'invalid_client') {
-          throw new Error('Authentication service error. Please try again later.')
-        }
         throw new Error(data.message || 'Login failed')
+      }
+
+      if (data.redirect) {
+        window.location.href = data.redirect
+        return
       }
 
       toast({
         title: "Success",
-        description: "Login successful!",
+        description: "Logged in successfully",
       })
-
       router.push('/dashboard')
-      router.refresh()
-    } catch (error: any) {
+
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Login failed",
       })
     } finally {
       setIsLoading(false)
@@ -84,7 +81,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="flex items-center justify-center">
+          <CardTitle className="text-center">
             {serviceName ? (
               <>Login to access {serviceName}</>
             ) : (
@@ -100,39 +97,35 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email address
-              </label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
-                type="email"
+                id="username"
+                type="text"
                 value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                placeholder="Enter your email"
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  username: e.target.value
+                }))}
                 required
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="Enter your password"
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  password: e.target.value
+                }))}
                 required
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={isLoading}
-            >
-              {isLoading ? "Logging in..." : "Login"}
+          <CardFooter>
+            <Button type="submit" className="w-full">
+              Login
             </Button>
           </CardFooter>
         </form>

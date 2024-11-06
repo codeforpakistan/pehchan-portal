@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
@@ -15,6 +15,21 @@ export default function LoginPage() {
     username: '',
     password: '',
   })
+  const searchParams = useSearchParams()
+  const clientId = searchParams.get('client_id')
+  const redirectUri = searchParams.get('redirect_uri')
+  const serviceName = searchParams.get('service_name')
+
+  // Store client info in session
+  useEffect(() => {
+    if (clientId && redirectUri) {
+      sessionStorage.setItem('oauth_client', JSON.stringify({
+        clientId,
+        redirectUri,
+        serviceName
+      }))
+    }
+  }, [clientId, redirectUri, serviceName])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,8 +85,17 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center justify-center">
-            Login to Pehchan
+            {serviceName ? (
+              <>Login to access {serviceName}</>
+            ) : (
+              <>Login to Pehchan</>
+            )}
           </CardTitle>
+          {clientId && (
+            <CardDescription className="text-center">
+              Using Pehchan ID for secure access
+            </CardDescription>
+          )}
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

@@ -80,3 +80,16 @@ export const createLogoutUrl = (redirectUri: string) => {
 
   return `${KEYCLOAK_URLS.LOGOUT}?${params.toString()}`
 }
+
+// Add to existing file
+export const createAuthorizationUrl = (clientId: string, redirectUri: string, state: string) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    state,
+    scope: 'openid profile email'
+  })
+
+  return `${KEYCLOAK_URLS.AUTH}?${params.toString()}`
+}

@@ -4,6 +4,21 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   console.log('Middleware running for path:', request.nextUrl.pathname)
   
+  // Handle CORS preflight requests
+  if (request.method === 'OPTIONS') {
+    const response = new NextResponse(null, { status: 200 })
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    return response
+  }
+
+  // Create response early so we can add CORS headers to all responses
+  const response = NextResponse.next()
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
   // Add your public paths that should bypass auth
   const publicPaths = [
     '/images/',      // Allow access to images
@@ -30,7 +45,7 @@ export function middleware(request: NextRequest) {
 
   // If it's a public path, allow access
   if (isPublicPath) {
-    return NextResponse.next()
+    return response
   }
 
   // For protected routes (including dashboard)
@@ -47,7 +62,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  return NextResponse.next()
+  return response
 }
 
 export const config = {

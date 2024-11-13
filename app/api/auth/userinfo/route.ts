@@ -8,7 +8,7 @@ const allowedOrigin = process.env.NODE_ENV === 'production'
 export async function OPTIONS() {
   return new NextResponse(null, {
     headers: {
-      'Access-Control-Allow-Origin': allowedOrigin,
+      'Access-Control-Allow-Origin': "*",
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },

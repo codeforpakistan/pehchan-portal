@@ -11,6 +11,8 @@ import { useRouter } from 'next/navigation'
 import { useToast } from "@/hooks/use-toast"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Bell } from "lucide-react"
+import { UserServices } from "@/components/dashboard/user-services"
+
 interface UserProfile {
   sub?: string
   email?: string
@@ -136,19 +138,7 @@ export default function Component() {
         </Card>
 
         {/* Active Services */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Active Services</CardTitle>
-            <CardDescription>Services you are currently logged into</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">Tax Portal</Badge>
-              <Badge variant="secondary">Health Services</Badge>
-              <Badge variant="secondary">Education Portal</Badge>
-            </div>
-          </CardContent>
-        </Card>
+        <UserServices />
 
         {/* Notifications */}
         <Card className="mb-6">

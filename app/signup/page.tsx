@@ -63,8 +63,12 @@ export default function Component() {
     switch (currentStep) {
       case RegistrationStep.EnterContact:
         return (
-          <form onSubmit={(e) => {
+          <form onSubmit={async (e) => {
             e.preventDefault()
+            const code = generateVerificationCode();
+            setGeneratedCode(code);
+            setVerificationCode(code);
+
             if (!isEmail(contact)) {
               if (!contact.startsWith('+92')) {
                 toast({
@@ -75,10 +79,36 @@ export default function Component() {
                 return
               }
               setPhone(contact)
+            } else {
+              try {
+                const response = await fetch('/api/send-verification', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    email: contact,
+                    code: code,
+                  }),
+                });
+
+                if (!response.ok) {
+                  throw new Error('Failed to send verification email');
+                }
+
+                toast({
+                  title: "Success",
+                  description: "Verification code sent to your email",
+                });
+              } catch (error) {
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Failed to send verification email. Please try again.",
+                });
+                return;
+              }
             }
-            const code = generateVerificationCode();
-            setGeneratedCode(code);
-            setVerificationCode(code);
             setCurrentStep(currentStep + 1)
           }}>
             <div className="space-y-4">

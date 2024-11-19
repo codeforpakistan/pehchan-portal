@@ -43,6 +43,14 @@ class KeycloakAdmin {
     const users = await this.adminClient.users.find({ email })
     return users[0]
   }
+
+  async getUserSessions(userId: string) {
+    await this.init()
+    return this.adminClient.users.listSessions({
+      id: userId,
+      realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM!
+    })
+  }
 }
 
 export const keycloakAdmin = new KeycloakAdmin()

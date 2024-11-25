@@ -15,6 +15,40 @@ export async function OPTIONS() {
   })
 }
 
+/**
+ * @swagger
+ * /api/auth/userinfo:
+ *   get:
+ *     summary: Get user information
+ *     description: Retrieve authenticated user's profile information
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 sub:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 email_verified:
+ *                   type: boolean
+ *                 name:
+ *                   type: string
+ *                 profile:
+ *                   type: object
+ *                   properties:
+ *                     cnic:
+ *                       type: string
+ *                     phone:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized
+ */
 export async function GET(request: Request) {
   try {
     // Get the access token from Authorization header

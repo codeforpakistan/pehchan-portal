@@ -14,7 +14,7 @@ export default function IndexPage() {
   const router = useRouter()
 
   return (
-    <div className="w-full bg-gradient-to-b to-green-100 from-green-50">
+    <div className="w-full bg-gradient-to-b to-green-100 from-green-50  dark:bg-green-950 dark:bg-none">
       <div className="container mx-auto px-4 md:px-8 py-16 md:py-24 relative z-10">
         <div className="flex gap-8 justify-center">
           <div className="space-y-6 md:w-2/3">

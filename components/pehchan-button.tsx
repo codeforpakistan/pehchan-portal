@@ -9,10 +9,10 @@ interface PehchanButtonProps {
 export default function PehchanButton({ onClick }: PehchanButtonProps) {
   return (
     <Button 
-      className="bg-[#00875A] hover:bg-[#006644] dark:bg-white dark:hover:bg-gray-100 text-white dark:text-[#00875A] h-full font-medium py-2 px-4 rounded-md flex items-center justify-center transition-colors"
+      className="bg-green-700 hover:bg-green-800 gap-2 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-[#00875A] h-full font-medium py-2 px-4 rounded-md flex items-center justify-center transition-colors"
       onClick={onClick}
     >
-      <Icons.whiteLogo className="w-4 h-4 mr-2" />
+      <Icons.whiteLogo  />
        Continue with Pehchan
     </Button>
   )

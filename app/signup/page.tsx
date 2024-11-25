@@ -306,7 +306,7 @@ export default function Component() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    <div className="bg-background flex flex-1 flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center justify-center">

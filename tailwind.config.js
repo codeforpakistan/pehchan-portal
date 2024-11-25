@@ -14,6 +14,24 @@ module.exports = {
     },
     extend: {
       colors: {
+        green: { 
+          // 500: '#00AC48',
+          // 700: '#008060',
+          // 800: '#006644',
+
+          50:  "#E5F7ED",
+          100: "#cceeda",
+          200: "#aae3c2",
+          300: "#80d6a4",
+          400: "#55C88E",
+          500: "#2aba67",
+          600: "#00ac48",
+          700: "#008F48",
+          800: "#006B3E",
+          900: "#00402B",
+          950: "#002b20",
+          // 950: "#001a13",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -55,6 +73,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: ["Public Sans" ,"var(--font-sans)", ...fontFamily.sans],
       },
       keyframes: {
         "accordion-down": {

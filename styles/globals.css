@@ -60,4 +60,8 @@
   }
 }
 
+h1#bigtitle {
+  font-size: calc(16px + 4vw);
+}
+
 

@@ -81,12 +81,12 @@ export default function Component() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex container">
       {/* Use the shared Sidebar component */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-6 overflow-y-auto max-w-2xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <Button variant="outline" size="icon" className="md:hidden" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>

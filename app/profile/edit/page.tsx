@@ -139,10 +139,10 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex container">
       <Sidebar isSidebarOpen={isSidebarOpen} />
 
-      <main className="flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-6 overflow-y-auto max-w-2xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-foreground">Edit Profile</h1>
           <Button variant="outline" size="icon" className="md:hidden" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
@@ -150,10 +150,9 @@ export default function EditProfile() {
           </Button>
         </div>
 
-        <div className="container max-w-2xl py-8">
           <Card>
             <CardHeader>
-              <CardTitle>Edit Profile</CardTitle>
+              {/* <CardTitle>Edit Profile</CardTitle> */}
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -240,7 +239,6 @@ export default function EditProfile() {
               </form>
             </CardContent>
           </Card>
-        </div>
       </main>
     </div>
   )

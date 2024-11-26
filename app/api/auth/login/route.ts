@@ -1,6 +1,34 @@
 import { NextResponse } from 'next/server'
 import { KEYCLOAK_CONFIG, KEYCLOAK_URLS } from '@/lib/keycloak-config'
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Authenticate user
+ *     description: Login with username and password
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               clientId:
+ *                 type: string
+ *               redirectUri:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       401:
+ *         description: Authentication failed
+ */
 export async function POST(request: Request) {
   try {
     const { username, password, clientId, redirectUri } = await request.json()

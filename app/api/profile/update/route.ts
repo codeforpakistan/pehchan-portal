@@ -2,6 +2,36 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { supabase } from '@/lib/supabase'
 
+/**
+ * @swagger
+ * /api/profile/update:
+ *   post:
+ *     tags: [User Profile]
+ *     summary: Update user profile
+ *     description: Update authenticated user's profile information
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               full_name:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               cnic:
+ *                 type: string
+ *               avatar_url:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Unauthorized
+ */
 export async function POST(request: Request) {
   try {
     const accessToken = cookies().get('access_token')?.value

@@ -1,0 +1,105 @@
+openapi: 3.0.0
+info:
+  title: Pehchan Authentication API
+  description: Official API documentation for Pehchan SSO integration
+  version: 1.0.0
+  contact:
+    email: support@pehchan.gov.pk
+
+servers:
+  - url: https://pehchan.gov.pk/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Local development
+
+paths:
+  /auth/authorize:
+    get:
+      summary: Initialize OAuth flow
+      description: Redirects users to Pehchan login page
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: service_name
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirects to login page
+        '400':
+          description: Missing required parameters
+
+  /auth/login:
+    post:
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                clientId:
+                  type: string
+                redirectUri:
+                  type: string
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  id_token:
+                    type: string
+
+  /auth/userinfo:
+    get:
+      summary: Get user information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sub:
+                    type: string
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  profile:
+                    type: object
+                    properties:
+                      cnic:
+                        type: string
+                      phone:
+                        type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

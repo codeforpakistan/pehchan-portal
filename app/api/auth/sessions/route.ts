@@ -3,6 +3,8 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { KEYCLOAK_URLS } from '@/lib/keycloak-config'
 
+export const dynamic = 'force-dynamic'
+
 interface KeycloakSession {
   id?: string
   username?: string

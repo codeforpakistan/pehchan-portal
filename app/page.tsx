@@ -25,7 +25,7 @@ export default function IndexPage() {
               Welcome to Pehchan
             </p>
             <h1 className="text-6xl md:text-5xl font-bold leading-tight text-center " id="bigtitle">
-              <span className="text-green-600">Pakistan&apos;s First</span> Secure and Seamless Digital Identity Platform
+              <span className="text-green-500">Pakistan&apos;s First</span> Secure and Seamless Digital Identity Platform
             </h1>
             {/* <p className="text-xl text-gray-600 max-w-md">
               Empowering Pakistan&apos;s Digital Future: Your Secure and Seamless Digital Identity Platform

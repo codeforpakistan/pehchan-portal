@@ -1,6 +1,40 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Log out the user
+ *     description: Ends the user's session in Keycloak and clears all authentication-related cookies.
+ *     responses:
+ *       200:
+ *         description: User has been logged out successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: A message indicating successful logout.
+ *                   example: "Logged out successfully"
+ *       500:
+ *         description: An error occurred during the logout process.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: A message indicating logout failure.
+ *                   example: "Failed to logout"
+ */
+
+
 export async function POST() {
   try {
     const accessTokenCookie = cookies().get('access_token')

@@ -2,6 +2,81 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { keycloakAdmin } from '@/lib/keycloak-admin'
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Register a new user
+ *     description: Registers a new user by creating their account in both Keycloak and Supabase.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fullName
+ *               - email
+ *               - phone
+ *               - cnic
+ *               - password
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 description: The user's full name.
+ *                 example: John Doe
+ *               email:
+ *                 type: string
+ *                 description: The user's email address.
+ *                 example: john.doe@example.com
+ *               phone:
+ *                 type: string
+ *                 description: The user's phone number.
+ *                 example: +1234567890
+ *               cnic:
+ *                 type: string
+ *                 description: The user's CNIC (or national ID number).
+ *                 example: 12345-6789012-3
+ *               password:
+ *                 type: string
+ *                 description: The user's password.
+ *                 example: StrongP@ssw0rd
+ *     responses:
+ *       200:
+ *         description: User registered successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   description: Indicates if the registration was successful.
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   description: Message describing the operation result.
+ *                   example: Registration successful! Please log in.
+ *       500:
+ *         description: Registration failed due to server-side error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   description: Indicates if the registration was successful.
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   description: Error message describing what went wrong.
+ *                   example: Failed to create user profile.
+ */
+
+
 export async function POST(request: Request) {
   try {
     const { fullName, email, phone, cnic, password } = await request.json()

@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
  * /api/sessions:
  *   get:
  *     tags:
- *       - Authentication
+ *       - Sessions
  *     summary: Fetch active user sessions from Keycloak
  *     description: Retrieves all active user sessions from Keycloak using the access token stored in cookies, and formats the session data.
  *     responses:

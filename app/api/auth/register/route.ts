@@ -7,7 +7,7 @@ import { keycloakAdmin } from '@/lib/keycloak-admin'
  * /api/auth/register:
  *   post:
  *     tags:
- *       - Authentication
+ *       - User Profile
  *     summary: Register a new user
  *     description: Registers a new user by creating their account in both Keycloak and Supabase.
  *     requestBody:

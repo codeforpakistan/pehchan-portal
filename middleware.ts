@@ -26,6 +26,8 @@ export function middleware(request: NextRequest) {
     '/signup',
     '/',
     '/api/auth',
+    '/forgot-password',
+    '/reset-password',
     '_next',
     'favicon.ico'
   ]

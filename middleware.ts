@@ -1,13 +1,26 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { corsConfig } from '@/config/cors'
+
+function isAllowedOrigin(origin: string | null) {
+  if (!origin) return false
+  if (corsConfig.allowedOrigins.includes('*')) return true
+  return corsConfig.allowedOrigins.includes(origin)
+}
 
 export function middleware(request: NextRequest) {
   console.log('Middleware running for path:', request.nextUrl.pathname)
   
+  const origin = request.headers.get('origin')
+  
   // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
     const response = new NextResponse(null, { status: 200 })
-    response.headers.set('Access-Control-Allow-Origin', '*')
+    if (corsConfig.allowedOrigins.includes('*')) {
+      response.headers.set('Access-Control-Allow-Origin', '*')
+    } else if (origin && isAllowedOrigin(origin)) {
+      response.headers.set('Access-Control-Allow-Origin', origin)
+    }
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     return response
@@ -15,7 +28,13 @@ export function middleware(request: NextRequest) {
 
   // Create response early so we can add CORS headers to all responses
   const response = NextResponse.next()
-  response.headers.set('Access-Control-Allow-Origin', '*')
+  
+  if (corsConfig.allowedOrigins.includes('*')) {
+    response.headers.set('Access-Control-Allow-Origin', '*')
+  } else if (origin && isAllowedOrigin(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin)
+  }
+  
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 

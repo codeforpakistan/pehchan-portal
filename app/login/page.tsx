@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
+import Link from 'next/link'
+
 export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -125,6 +127,14 @@ export default function LoginPage() {
                 }))}
                 required
               />
+            </div>
+            <div className="text-sm text-right">
+              <Link 
+                href="/forgot-password"
+                className="text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
             </div>
           </CardContent>
           <CardFooter>

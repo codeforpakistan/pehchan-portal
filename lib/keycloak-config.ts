@@ -35,14 +35,12 @@ export const KEYCLOAK_CONFIG: KeycloakConfig = {
 
 // Useful URLs derived from the config
 export const KEYCLOAK_URLS = {
-  // Authentication endpoints
-  TOKEN: `${KEYCLOAK_CONFIG.URL}/realms/${KEYCLOAK_CONFIG.REALM}/protocol/openid-connect/token`,
-  AUTH: `${KEYCLOAK_CONFIG.URL}/realms/${KEYCLOAK_CONFIG.REALM}/protocol/openid-connect/auth`,
-  LOGOUT: `${KEYCLOAK_CONFIG.URL}/realms/${KEYCLOAK_CONFIG.REALM}/protocol/openid-connect/logout`,
-  USERINFO: `${KEYCLOAK_CONFIG.URL}/realms/${KEYCLOAK_CONFIG.REALM}/protocol/openid-connect/userinfo`,
-  
-  // Admin endpoints
-  ADMIN_USERS: `${KEYCLOAK_CONFIG.URL}/admin/realms/${KEYCLOAK_CONFIG.REALM}/users`,
+  BASE: process.env.NEXT_PUBLIC_KEYCLOAK_URL,
+  AUTH: `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/auth`,
+  TOKEN: `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/token`,
+  USERINFO: `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
+  LOGOUT: `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/logout`,
+  WEBAUTHN: `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/webauthn`
 }
 
 // Helper function to get headers for Keycloak requests

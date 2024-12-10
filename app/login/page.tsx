@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
+import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
+
 export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -23,6 +25,7 @@ export default function LoginPage() {
   const clientId = searchParams.get('client_id')
   const redirectUri = searchParams.get('redirect_uri')
   const serviceName = searchParams.get('service_name')
+  const [isPasskeySupported, setIsPasskeySupported] = useState(false)
 
   // Store client info in session
   useEffect(() => {
@@ -34,6 +37,14 @@ export default function LoginPage() {
       }))
     }
   }, [clientId, redirectUri, serviceName])
+
+  // Check if browser supports WebAuthn/passkeys
+  useEffect(() => {
+    setIsPasskeySupported(
+      window.PublicKeyCredential &&
+      typeof window.PublicKeyCredential === 'function'
+    )
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,6 +89,115 @@ export default function LoginPage() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Function to handle passkey registration
+  const handlePasskeyRegistration = async () => {
+    if (!formData.username) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter your username first",
+      })
+      return
+    }
+
+    try {
+      // Get registration options from server
+      const optionsRes = await fetch('/api/auth/passkey', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          username: formData.username,
+        }),
+      })
+      
+      const options = await optionsRes.json()
+
+      // Start registration
+      const credential = await startRegistration(options)
+
+      // Complete registration
+      const verificationRes = await fetch('/api/auth/passkey', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register-finish',
+          username: formData.username,
+          credential,
+        }),
+      })
+
+      if (!verificationRes.ok) {
+        throw new Error('Failed to register passkey')
+      }
+
+      toast({
+        title: "Success",
+        description: "Passkey registered successfully",
+      })
+
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to register passkey",
+      })
+    }
+  }
+
+  // Function to handle passkey authentication
+  const handlePasskeyLogin = async () => {
+    try {
+      // Get WebAuthn options
+      const optionsRes = await fetch('/api/auth/passkey', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'authenticate',
+          username: formData.username,
+        }),
+      })
+
+      const options = await optionsRes.json()
+      
+      // Start WebAuthn authentication
+      const credential = await startAuthentication({
+        optionsJSON: {
+          challenge: options.challenge,
+          rpId: options.rpId,
+          allowCredentials: [],
+          userVerification: options.userVerification,
+        }
+      })
+
+      // Complete authentication
+      const verificationRes = await fetch('/api/auth/passkey', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'authenticate-finish',
+          username: formData.username,
+          credential,
+        }),
+      })
+
+      const result = await verificationRes.json()
+      if (result.access_token) {
+        toast({
+          title: "Success",
+          description: "Logged in successfully with passkey",
+        })
+        router.push('/dashboard')
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Passkey login failed",
+      })
     }
   }
 
@@ -126,10 +246,25 @@ export default function LoginPage() {
                 required
               />
             </div>
+            
+            {isPasskeySupported && (
+              <div className="flex flex-col space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePasskeyLogin}
+                >
+                  Sign in with Passkey
+                </Button>
+                <div className="text-sm text-muted-foreground text-center">
+                  or use your password below
+                </div>
+              </div>
+            )}
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full">
-              Login
+              Sign in with Password
             </Button>
           </CardFooter>
         </form>

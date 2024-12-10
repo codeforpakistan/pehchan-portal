@@ -1,28 +1,26 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export function useAuth() {
-  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const checkToken = async () => {
+    const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/check', {
-          method: 'GET',
-        })
-
-        if (!response.ok) {
-          router.push('/login')
-        }
+        const res = await fetch('/api/auth/check')
+        const data = await res.json()
+        setIsAuthenticated(data.isAuthenticated)
       } catch (error) {
-        router.push('/login')
+        setIsAuthenticated(false)
+      } finally {
+        setIsLoading(false)
       }
     }
+    checkAuth()
+  }, [])
 
-    const interval = setInterval(checkToken, 4 * 60 * 1000) // Check every 4 minutes
-
-    return () => clearInterval(interval)
-  }, [router])
+  return { isAuthenticated, isLoading }
 }

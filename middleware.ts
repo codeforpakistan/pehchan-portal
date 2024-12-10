@@ -25,7 +25,8 @@ export function middleware(request: NextRequest) {
     '/login',
     '/signup',
     '/',
-    '/api/auth',
+    '/api/auth/login',
+    '/api/auth/callback',
     '_next',
     'favicon.ico'
   ]
@@ -67,12 +68,17 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/api/auth/check',
+    '/api/auth/refresh',
+    '/api/auth/logout',
+    '/dashboard/:path*',
+    '/settings/:path*',
     /*
      * Match all paths except:
      * - api/auth (to allow login/logout)
      * - _next (static files)
      * - images (public assets)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|images/).*)',
+    '/((?!api/auth/login|api/auth/callback|_next/static|_next/image|favicon.ico|images/).*)',
   ],
 }

@@ -1,24 +1,56 @@
 import { NextResponse } from 'next/server'
 import { KEYCLOAK_URLS, KEYCLOAK_CONFIG } from '@/lib/keycloak-config'
+import { cookies } from 'next/headers'
+
+// Helper function to extract WebAuthn parameters
+function extractWebAuthnParams(html: string, request: Request) {
+  const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const rpId = new URL(origin).hostname
+
+  const challengeMatch = html.match(/challenge\s*:\s*'([^']+)'/)
+  if (!challengeMatch) {
+    throw new Error('Failed to extract WebAuthn parameters')
+  }
+
+  return {
+    challenge: challengeMatch[1],
+    rpId,
+  }
+}
+
+function base64UrlEncode(str: string): string {
+  return Buffer.from(str)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  return Buffer.from(buffer).toString('base64');
+}
 
 export async function POST(request: Request) {
   try {
     const { action, username, credential } = await request.json()
-
-    // Base URL for WebAuthn
     const webAuthnBaseUrl = `${KEYCLOAK_URLS.BASE}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect`
 
-    console.log('Action:', action)
-    console.log('Username:', username)
+    // Only check auth for register-finish and authenticate-finish
+    if (action === 'register-finish' || action === 'authenticate-finish') {
+      const accessToken = cookies().get('access_token')?.value
+      if (!accessToken) {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        )
+      }
+    }
 
     switch (action) {
-      case 'authenticate':
-        // First initiate WebAuthn authentication
+      case 'authenticate': {
         const authResponse = await fetch(`${webAuthnBaseUrl}/auth`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             client_id: KEYCLOAK_CONFIG.CLIENT_ID,
             response_type: 'code',
@@ -29,70 +61,119 @@ export async function POST(request: Request) {
           }).toString(),
         })
 
-        // Extract WebAuthn parameters from the HTML response
         const html = await authResponse.text()
-        
-        // Get the origin for rpId
-        const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-        const rpId = new URL(origin).hostname // This will give us 'localhost' in development
-        
-        // Parse the challenge from the script section
-        const challengeMatch = html.match(/challenge\s*:\s*'([^']+)'/)
-        if (!challengeMatch) {
-          throw new Error('Failed to extract WebAuthn parameters')
-        }
+        const { challenge, rpId } = extractWebAuthnParams(html, request)
 
         return NextResponse.json({
-          challenge: challengeMatch[1],
-          rpId: rpId, // Use the local hostname instead of Keycloak's domain
+          challenge,
+          rpId,
           type: 'webauthn.get',
           userVerification: 'preferred',
         })
+      }
 
-      case 'register':
-        const regResponse = await fetch(`${webAuthnBaseUrl}/ws/register`, {
+      case 'register': {
+        if (!username) {
+          return NextResponse.json(
+            { error: 'Username is required' },
+            { status: 400 }
+          )
+        }
+
+        const regResponse = await fetch(`${webAuthnBaseUrl}/auth`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: KEYCLOAK_CONFIG.CLIENT_ID,
+            response_type: 'code',
+            scope: 'openid',
+            redirect_uri: KEYCLOAK_CONFIG.REDIRECT_URI,
+            acr_values: 'webauthn-register-passwordless',
             username,
+          }).toString(),
+        })
+
+        const html = await regResponse.text()
+        const { challenge, rpId } = extractWebAuthnParams(html, request)
+
+        // Generate a random user ID instead of encoding username
+        const userId = Buffer.from(crypto.randomUUID()).toString('base64')
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=/g, '')
+
+        return NextResponse.json({
+          challenge,
+          rpId,
+          rp: {
+            name: 'Pehchan',
+            id: rpId
+          },
+          user: {
+            id: userId,
+            name: username,
+            displayName: username
+          },
+          pubKeyCredParams: [
+            { type: "public-key" as const, alg: -7 },
+            { type: "public-key" as const, alg: -257 }
+          ],
+          authenticatorSelection: {
             authenticatorAttachment: 'platform',
             requireResidentKey: true,
-            userVerification: 'preferred',
-            attestation: 'none',
-          }),
+            userVerification: 'preferred'
+          },
+          timeout: 60000
         })
+      }
 
-        if (!regResponse.ok) {
-          const error = await regResponse.text()
-          throw new Error(`Registration failed: ${error}`)
+      case 'register-finish': {
+        console.log('Register finish - credential:', credential)
+        console.log('Credential response:', credential.response)
+
+        const accessToken = cookies().get('access_token')?.value
+        if (!accessToken) {
+          return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
         }
 
-        return NextResponse.json(await regResponse.json())
-        const regData = await regResponse.json()
-        return NextResponse.json(regData)
+        // Ensure all required data exists
+        if (!credential.response.clientDataJSON || 
+            !credential.response.attestationObject || 
+            !credential.id || 
+            !credential.response.authenticatorData || 
+            !credential.response.publicKey) {
+          return NextResponse.json(
+            { error: 'Missing required credential data' },
+            { status: 400 }
+          )
+        }
 
-      case 'register-finish':
-        // Complete WebAuthn registration
-        const finishRegResponse = await fetch(`${webAuthnBaseUrl}/register/finish`, {
+        const finishRegResponse = await fetch(`${KEYCLOAK_URLS.BASE}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/webauthn/register/finish`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({
-            username,
-            credential,
-          }),
+          body: new URLSearchParams({
+            clientDataJSON: credential.response.clientDataJSON,
+            attestationObject: credential.response.attestationObject,
+            credentialId: credential.id,
+            authenticatorData: credential.response.authenticatorData,
+            publicKey: credential.response.publicKey,
+            client_id: KEYCLOAK_CONFIG.CLIENT_ID,
+          }).toString(),
         })
 
+        console.log('Finish response status:', finishRegResponse.status)
+        const responseData = await finishRegResponse.text()
+        console.log('Finish response:', responseData)
+
         if (!finishRegResponse.ok) {
-          const error = await finishRegResponse.text()
-          throw new Error(`Registration completion failed: ${error}`)
+          throw new Error(`Registration completion failed: ${responseData}`)
         }
 
-        return NextResponse.json(await finishRegResponse.json())
+        return NextResponse.json({ success: true })
+      }
 
       case 'authenticate-finish':
         // Complete WebAuthn authentication

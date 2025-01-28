@@ -23,7 +23,6 @@ Pehchan transforms Pakistan's identity infrastructure for the digital era. By pr
 ### Prerequisites
 
 - Node.js 18.x or later
-- Docker (for running Keycloak locally)
 - PostgreSQL
 
 ### Installation
@@ -44,7 +43,7 @@ npm install
 cp .env.example .env.local
 ```
 
-4. Start Keycloak using Docker:
+4. Start Keycloak using Docker if needed:
 ```bash
 docker-compose up -d
 ```

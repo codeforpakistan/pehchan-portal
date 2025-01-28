@@ -125,7 +125,7 @@ export default function Component() {
         </Card>
 
         {/* Debug Auth Info - Keep this during development */}
-        <Card className="mb-6">
+        {/*<Card className="mb-6">
           <CardHeader>
             <CardTitle>Auth Debug Info</CardTitle>
             <CardDescription>Current authentication status and details</CardDescription>
@@ -135,7 +135,7 @@ export default function Component() {
               {JSON.stringify(authInfo, null, 2)}
             </pre>
           </CardContent>
-        </Card>
+        </Card>*/}
 
         {/* Active Services */}
         <UserServices />

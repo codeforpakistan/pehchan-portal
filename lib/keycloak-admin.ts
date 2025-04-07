@@ -63,6 +63,14 @@ class KeycloakAdmin {
       },
     })
   }
+
+  async deleteUser(userId: string) {
+    await this.init()
+    return this.adminClient.users.del({
+      id: userId,
+      realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM!
+    })
+  }
 }
 
 export const keycloakAdmin = new KeycloakAdmin()

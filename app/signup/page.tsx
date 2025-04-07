@@ -1,330 +1,267 @@
 "use client"
 
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useRouter } from 'next/navigation'
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
+import { normalizePhoneNumber } from '@/lib/phone'
 
-enum RegistrationStep {
-  EnterContact,
-  Verification,
-  BasicInfo,
-  NADRAVerisys,
-  Success
-}
-
-// Add this validation function at the top of your component
-const isEmail = (value: string) => {
-  return value.includes('@')
-}
-
-export default function Component() {
-  const [currentStep, setCurrentStep] = useState<RegistrationStep>(RegistrationStep.EnterContact)
-  const [contact, setContact] = useState('')
-  const [verificationCode, setVerificationCode] = useState('')
-  const [generatedCode, setGeneratedCode] = useState('')
-  const [cnic, setCNIC] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [password, setPassword] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
+export default function SignUpPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const [step, setStep] = useState<'form' | 'otp'>('form')
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    cnic: '',
+    password: '',
+    confirmPassword: '',
+  })
+  const [otp, setOtp] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setCurrentStep(currentStep + 1)
-  }
+    setIsLoading(true)
 
-  const renderProgressIndicator = () => {
-    const totalSteps = 3
-    const currentStepNumber = Math.min(currentStep + 1, totalSteps)
+    try {
+      // Validate passwords match
+      if (formData.password !== formData.confirmPassword) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Passwords do not match",
+        })
+        return
+      }
 
-    return (
-      <div className="flex items-center justify-center mb-6">
-        {Array.from({ length: totalSteps }, (_, index) => (
-          <div key={index} className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${index < currentStepNumber ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
-              {index < currentStepNumber ? '✓' : index + 1}
-            </div>
-            {index < totalSteps - 1 && (
-              <div className={`w-16 h-1 ${index < currentStepNumber - 1 ? 'bg-primary' : 'bg-secondary'}`} />
-            )}
-          </div>
-        ))}
-      </div>
-    )
-  }
+      // Normalize phone number
+      const normalizedPhone = normalizePhoneNumber(formData.phoneNumber)
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case RegistrationStep.EnterContact:
-        return (
-          <form onSubmit={async (e) => {
-            e.preventDefault()
-            const code = generateVerificationCode();
-            setGeneratedCode(code);
-            setVerificationCode(code);
+      // Send OTP
+      const otpResponse = await fetch('/api/auth/otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phoneNumber: normalizedPhone }),
+      })
 
-            if (!isEmail(contact)) {
-              if (!contact.startsWith('+92')) {
-                toast({
-                  variant: "destructive",
-                  title: "Error",
-                  description: "Please enter a valid email or phone number (+92XXXXXXXXXX)",
-                })
-                return
-              }
-              setPhone(contact)
-            } else {
-              try {
-                const response = await fetch('/api/send-verification', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    email: contact,
-                    code: code,
-                  }),
-                });
+      if (!otpResponse.ok) {
+        const error = await otpResponse.json()
+        throw new Error(error.message || 'Failed to send OTP')
+      }
 
-                if (!response.ok) {
-                  throw new Error('Failed to send verification email');
-                }
-
-                toast({
-                  title: "Success",
-                  description: "Verification code sent to your email",
-                });
-              } catch (error) {
-                toast({
-                  variant: "destructive",
-                  title: "Error",
-                  description: "Failed to send verification email. Please try again.",
-                });
-                return;
-              }
-            }
-            setCurrentStep(currentStep + 1)
-          }}>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="contact" className="text-sm font-medium">
-                  Enter email address or mobile number
-                </label>
-                <Input
-                  id="contact"
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  placeholder="Email or mobile number"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Submit
-              </Button>
-            </div>
-          </form>
-        )
-      case RegistrationStep.Verification:
-        return (
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              <div className="bg-secondary text-secondary-foreground p-2 rounded-md mb-4 flex items-center">
-                <span>Demo Code: {generatedCode}</span>
-                <X className="w-4 h-4 ml-auto" />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="verificationCode" className="text-sm font-medium">
-                  Enter verification code sent to {contact}
-                </label>
-                <Input
-                  id="verificationCode"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  placeholder="Enter code"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Submit
-              </Button>
-            </div>
-          </form>
-        )
-      case RegistrationStep.BasicInfo:
-        return (
-          <form onSubmit={async (e) => {
-            e.preventDefault()
-            try {
-              const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  fullName,
-                  email: isEmail(contact) ? contact : email,
-                  phone: !isEmail(contact) ? contact : phone,
-                  cnic,
-                  password,
-                }),
-              })
-
-              const data = await response.json()
-
-              if (!response.ok) {
-                throw new Error(data.message || 'Registration failed')
-              }
-
-              toast({
-                title: "Success",
-                description: "Registration successful! Please log in.",
-              })
-
-              router.push('/login')
-
-              // setCurrentStep(RegistrationStep.NADRAVerisys)
-            } catch (error: any) {
-              toast({
-                variant: "destructive",
-                title: "Error",
-                description: error.message,
-              })
-            }
-          }}>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="cnic" className="text-sm font-medium">
-                  Enter your CNIC
-                </label>
-                <Input
-                  id="cnic"
-                  value={cnic}
-                  onChange={(e) => setCNIC(e.target.value)}
-                  placeholder="XXXXX-XXXXXXX-X"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="fullName" className="text-sm font-medium">
-                  Enter your full name
-                </label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Full name as written on CNIC"
-                  required
-                />
-              </div>
-              {!isEmail(contact) && (
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Enter your email address
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email address"
-                    required
-                  />
-                </div>
-              )}
-              {isEmail(contact) && (
-                <div className="space-y-2">
-                  <label htmlFor="phone" className="text-sm font-medium">
-                    Enter your phone number
-                  </label>
-                  <Input
-                    id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+92XXXXXXXXXX"
-                    required
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Enter your password
-                </label>
-                <Input
-                  id="password"
-                  type='password'
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Submit
-              </Button>
-            </div>
-          </form>
-        )
-      // case RegistrationStep.NADRAVerisys:
-      //   return (
-      //     <div className="space-y-4">
-      //       <p className="text-sm">
-      //         Your personal information will be verified with NADRA. We can only accept information that have been verified with NADRA.
-      //       </p>
-      //       <p className="font-semibold">NADRA Verification Cost</p>
-      //       <p>Rs.150</p>
-      //       <Button onClick={() => setCurrentStep(RegistrationStep.Success)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-      //         Pay for NADRA Verification
-      //       </Button>
-      //       <Button variant="outline" className="w-full">
-      //         Skip for now
-      //       </Button>
-      //     </div>
-      //   )
-      case RegistrationStep.Success:
-        return (
-          <div className="space-y-4">
-            <div className="bg-secondary text-secondary-foreground p-4 rounded-md mb-4">
-              Your Pehchan ID is created successfully
-            </div>
-            <p className="text-sm">Use your email to log in with Pehchan</p>
-            <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              Continue
-            </Button>
-          </div>
-        )
+      setStep('otp')
+      toast({
+        title: "OTP Sent",
+        description: "Please check your phone for the verification code",
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send OTP",
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const generateVerificationCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      // Normalize phone number
+      const normalizedPhone = normalizePhoneNumber(formData.phoneNumber)
+
+      // Verify OTP
+      const verifyResponse = await fetch('/api/auth/otp', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber: normalizedPhone,
+          otp,
+        }),
+      })
+
+      if (!verifyResponse.ok) {
+        const error = await verifyResponse.json()
+        throw new Error(error.message || 'Failed to verify OTP')
+      }
+
+      // Create user in Keycloak
+      const signupResponse = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          phoneNumber: normalizedPhone, // Use normalized phone number
+          emailVerified: true, // Mark as verified since we've verified phone
+        }),
+      })
+
+      if (!signupResponse.ok) {
+        const error = await signupResponse.json()
+        throw new Error(error.message || 'Failed to create account')
+      }
+
+      toast({
+        title: "Success",
+        description: "Account created successfully! Please login.",
+      })
+      router.push('/login')
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create account",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="bg-background flex flex-1 flex-col items-center justify-center p-4">
+    <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="flex items-center justify-center">
-            <img src="green_icon.svg" alt="Pehchan logo" className="w-6 h-6 mr-2" />
-            Create your Pehchan ID
-          </CardTitle>
-          <p className="text-center text-sm text-muted-foreground">
-            Your Pehchan ID can be used to access multiple government services
-          </p>
+          <CardTitle>Create an account</CardTitle>
+          <CardDescription>
+            Enter your information to create your account
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {renderProgressIndicator()}
-          {renderStep()}
+          {step === 'form' ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  placeholder="03219862931, +923219862931, or 00923219862931"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cnic">CNIC</Label>
+                <Input
+                  id="cnic"
+                  name="cnic"
+                  value={formData.cnic}
+                  onChange={handleInputChange}
+                  placeholder="17301-6693662-9 or 1730166936629"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send Verification Code
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOTP} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="otp">Verification Code</Label>
+                <Input
+                  id="otp"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  maxLength={6}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Verify and Create Account
+              </Button>
+            </form>
+          )}
         </CardContent>
+        <CardFooter>
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Button variant="link" className="p-0" onClick={() => router.push('/login')}>
+              Login
+            </Button>
+          </p>
+        </CardFooter>
       </Card>
-      <footer className="mt-8 text-center text-sm text-muted-foreground">
-        This is a demo for Pehchan, a digital identity solution for the Pakistan government.
-      </footer>
     </div>
   )
 }

@@ -128,19 +128,16 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <div className="text-sm text-right">
-              <Link 
-                href="/forgot-password"
-                className="text-primary hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full">
               Login
             </Button>
+            <div className="text-center text-sm mt-4">
+              <Link href="/forgot-password" className="text-primary hover:underline">
+                Forgot your password?
+              </Link>
+            </div>
           </CardFooter>
         </form>
       </Card>

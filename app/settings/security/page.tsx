@@ -183,7 +183,7 @@ export default function SecuritySettingsPage() {
           </div>
           <DialogFooter>
             <Button onClick={() => setShowBackupCodes(false)}>
-              I've saved these codes
+              I&apos;ve saved these codes
             </Button>
           </DialogFooter>
         </DialogContent>

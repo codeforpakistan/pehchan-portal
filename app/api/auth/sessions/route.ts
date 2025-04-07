@@ -13,6 +13,8 @@ interface KeycloakSession {
   clients?: { [key: string]: string }
 }
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const accessToken = cookies().get('access_token')?.value

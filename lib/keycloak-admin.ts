@@ -51,6 +51,26 @@ class KeycloakAdmin {
       realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM!
     })
   }
+
+  async resetUserPassword(userId: string, password: string) {
+    await this.init()
+    return this.adminClient.users.resetPassword({
+      id: userId,
+      credential: {
+        temporary: false,
+        type: 'password',
+        value: password,
+      },
+    })
+  }
+
+  async deleteUser(userId: string) {
+    await this.init()
+    return this.adminClient.users.del({
+      id: userId,
+      realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM!
+    })
+  }
 }
 
 export const keycloakAdmin = new KeycloakAdmin()

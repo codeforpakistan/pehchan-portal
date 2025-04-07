@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { corsConfig } from '@/config/cors'
+import { supabase } from '@/lib/supabase'
 
 function isAllowedOrigin(origin: string | null) {
   if (!origin) return false
@@ -8,7 +9,7 @@ function isAllowedOrigin(origin: string | null) {
   return corsConfig.allowedOrigins.includes(origin)
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   console.log('Middleware running for path:', request.nextUrl.pathname)
   
   const origin = request.headers.get('origin')
@@ -40,24 +41,28 @@ export function middleware(request: NextRequest) {
 
   // Add your public paths that should bypass auth
   const publicPaths = [
-    '/images/',      // Allow access to images
+    '/images/',
     '/login',
     '/signup',
     '/',
     '/api/auth',
-    '_next',
-    'favicon.ico'
+    '/forgot-password',
+    '/reset-password',
+    '/auth/2fa-verify',
+    '/_next',
+    '/favicon.ico'
   ]
 
   // Get auth tokens
-  const session = request.cookies.get('session')?.value
   const accessToken = request.cookies.get('access_token')?.value
 
-  console.log('Auth tokens:', { session, accessToken })
+  console.log('Auth tokens:', { accessToken })
 
-  // Check if the requested path starts with any of the public paths
+  // Check if the requested path is exactly one of the public paths
   const isPublicPath = publicPaths.some(path => 
-    request.nextUrl.pathname.startsWith(path)
+    request.nextUrl.pathname === path || 
+    request.nextUrl.pathname.startsWith('/_next/') ||
+    request.nextUrl.pathname.startsWith('/images/')
   )
 
   console.log('Is public path?', isPublicPath)
@@ -68,17 +73,55 @@ export function middleware(request: NextRequest) {
   }
 
   // For protected routes (including dashboard)
-  if (!session || !accessToken) {
+  if (!accessToken) {
     console.log('No valid session, redirecting to login')
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // If authenticated user tries to access login/signup
-  if (session && accessToken && (
-    request.nextUrl.pathname === '/login' || 
-    request.nextUrl.pathname === '/signup'
-  )) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Get user info from Keycloak
+  try {
+    const userInfoResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    )
+
+    if (!userInfoResponse.ok) {
+      console.log('Invalid token, redirecting to login')
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    const userInfo = await userInfoResponse.json()
+    console.log('User info:', userInfo)
+
+    // Check if 2FA is required
+    const { data: settings, error } = await supabase
+      .from('user_2fa_settings')
+      .select('totp_enabled')
+      .eq('user_id', userInfo.sub)
+      .single()
+
+    console.log('2FA settings:', settings, 'Error:', error)
+
+    // If 2FA is enabled but not verified
+    if (settings?.totp_enabled && !request.cookies.get('2fa_verified')) {
+      console.log('2FA required but not verified')
+      
+      // If already on 2FA verification page, allow access
+      if (request.nextUrl.pathname === '/auth/2fa-verify') {
+        return response
+      }
+      
+      console.log('Redirecting to 2FA verification')
+      return NextResponse.redirect(new URL('/auth/2fa-verify', request.url))
+    }
+
+  } catch (error) {
+    console.error('Middleware error:', error)
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response
@@ -86,12 +129,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all paths except:
-     * - api/auth (to allow login/logout)
-     * - _next (static files)
-     * - images (public assets)
-     */
     '/((?!api/auth|_next/static|_next/image|favicon.ico|images/).*)',
   ],
 }

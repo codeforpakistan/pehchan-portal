@@ -2,13 +2,13 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Shield, Code, BookOpen } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { buttonVariants } from "@/components/ui/button"
 import PehchanButton from "@/components/pehchan-button"
 import { Button } from "@/components/ui/button"
-
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function IndexPage() {
   const router = useRouter()
@@ -16,7 +16,7 @@ export default function IndexPage() {
   return (
     <div className="w-full bg-gradient-to-b to-green-600/20 from-green-600/10">
       <div className="container mx-auto px-4 md:px-8 py-16 md:py-24 relative z-10">
-        <div className="flex gap-8 justify-center">
+        <div className="flex flex-col md:flex-row gap-8 justify-center items-center">
           <div className="space-y-6 md:w-2/3">
             <div className="inline-block">
               {/* <Image src="/pehchan-logo.svg" alt="Pehchan Logo" width={80} height={80} className="mb-4" /> */}
@@ -32,29 +32,56 @@ export default function IndexPage() {
             </p> */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
               <PehchanButton onClick={() => router.push('/login')} />
-                
-              <Button asChild
-                
-                className={buttonVariants({ variant: "outline", size: "lg", className: "" })}
-              >
-                <Link href="/signup">
-                Create Account
-                </Link>
-                
+              <Button asChild className={buttonVariants({ variant: "outline", size: "lg" })}>
+                <Link href="/signup">Create Account</Link>
               </Button>
             </div>
           </div>
-          {/* <div className="relative hidden md:block">
-            <div className="absolute inset-0 bg-green-200 rounded-full opacity-20 blur-3xl"></div>
-            <Image
-              src="/images/hero-illustration.png"
-              alt="Digital Pakistan Illustration"
-              width={500}
-              height={500}
-              className="relative z-10"
-              priority
-            />
-          </div> */}
+        </div>
+
+        {/* Feature Cards */}
+        <div className="grid md:grid-cols-2 gap-6 mt-16 max-w-4xl mx-auto">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/sso-integration')}>
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Code className="h-6 w-6 text-green-600" />
+                </div>
+                <CardTitle>SSO Integration</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Learn how to integrate Pehchan SSO with your application. Get started with our comprehensive guide and code examples.
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/learn-more')}>
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <BookOpen className="h-6 w-6 text-green-600" />
+                </div>
+                <CardTitle>About Pehchan</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Discover how Pehchan is revolutionizing digital identity in Pakistan. Learn about our vision, technology, and impact.
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Security Badge */}
+        <div className="flex items-center justify-center gap-4 mt-16">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <Shield className="h-6 w-6 text-green-600" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Built with security and privacy at its core
+          </p>
         </div>
       </div>
       {/* <div className="absolute bottom-0 left-0 right-0 z-0">

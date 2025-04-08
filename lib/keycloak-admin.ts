@@ -1,8 +1,10 @@
 import KcAdminClient from '@keycloak/keycloak-admin-client'
 import { Credentials } from '@keycloak/keycloak-admin-client/lib/utils/auth'
+import { KEYCLOAK_URLS } from './keycloak-config'
 
 class KeycloakAdmin {
   private adminClient: KcAdminClient
+  private accessToken: string | null = null
 
   constructor() {
     this.adminClient = new KcAdminClient({
@@ -18,6 +20,13 @@ class KeycloakAdmin {
         clientId: process.env.KEYCLOAK_ADMIN_CLIENT_ID || 'admin-cli',
         clientSecret: process.env.KEYCLOAK_ADMIN_CLIENT_SECRET,
       } as Credentials)
+      
+      // Get the access token from the admin client's config
+      this.accessToken = this.adminClient.accessToken ?? null
+      
+      if (!this.accessToken) {
+        throw new Error('Failed to get access token from Keycloak admin client')
+      }
     } catch (error) {
       console.error('Keycloak admin client initialization failed:', error)
       throw error
@@ -50,6 +59,23 @@ class KeycloakAdmin {
       id: userId,
       realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM!
     })
+  }
+
+  async deleteUserSession(userId: string, sessionId: string) {
+    await this.init()
+    if (!this.accessToken) {
+      throw new Error('Admin client not initialized')
+    }
+
+    try {
+      // Use the Keycloak admin client's session management API
+      await this.adminClient.users.logout({
+        id: userId
+      })
+    } catch (error) {
+      console.error('Error deleting session:', error)
+      throw new Error('Failed to delete session')
+    }
   }
 
   async resetUserPassword(userId: string, password: string) {

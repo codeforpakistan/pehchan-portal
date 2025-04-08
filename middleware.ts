@@ -45,18 +45,27 @@ export async function middleware(request: NextRequest) {
     '/login',
     '/signup',
     '/reset-password',
+    '/verify-email',
+    '/sso-integration',
+    '/learn-more',
+    '/api/auth/callback',
     '/api/auth/register',
     '/api/auth/login',
-    '/api/auth/2fa/status',
-    '/api/auth/2fa/setup',
-    '/api/auth/2fa/verify',
-    '/api/auth/validate-reset-token',
     '/api/auth/reset-password',
-    '/api/auth/forgot-password',
+    '/api/auth/verify-email',
+    '/api/auth/validate-reset-token',
     '/api/auth/otp',
-    '/api/sso/register',
+    '/api/auth/sso/register',
+    '/api/auth/sso/validate',
     '/test-sso.html',
-    '/auth/callback'
+    '/auth/callback',
+    '/forgot-password',
+    '/auth/2fa-verify',
+    '/auth/2fa-setup',
+    '/auth/2fa-verify-email',
+    '/auth/2fa-verify-otp',
+    '/auth/2fa-verify-email-otp',
+    
   ]
 
   // Get auth tokens
@@ -66,6 +75,7 @@ export async function middleware(request: NextRequest) {
 
   // Check if the requested path is exactly one of the public paths
   const isPublicPath = publicPaths.some(path => 
+    
     request.nextUrl.pathname === path || 
     request.nextUrl.pathname.startsWith('/_next/') ||
     request.nextUrl.pathname.startsWith('/images/')
@@ -135,6 +145,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|images/).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - images/ (public images)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|images/).*)',
   ],
 }

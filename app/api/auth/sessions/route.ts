@@ -45,6 +45,7 @@ export async function GET() {
       const clientName = clientId && session.clients?.[clientId]
 
       return {
+        id: session.id,
         clientId,
         clientName,
         active: true,
@@ -60,6 +61,45 @@ export async function GET() {
     console.error('Session fetch error:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to fetch user sessions' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const sessionId = searchParams.get('sessionId')
+    
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 })
+    }
+
+    const accessToken = cookies().get('access_token')?.value
+    if (!accessToken) {
+      return NextResponse.json({ error: 'No access token found' }, { status: 401 })
+    }
+
+    // Get user info to get the user ID
+    const userInfoResponse = await fetch(
+      `${KEYCLOAK_URLS.USERINFO}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        }
+      }
+    )
+    const userInfo = await userInfoResponse.json()
+
+    // Delete the session using the admin client
+    await keycloakAdmin.deleteUserSession(userInfo.sub, sessionId)
+
+    return NextResponse.json({ success: true })
+
+  } catch (error: any) {
+    console.error('Session logout error:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to logout from session' },
       { status: 500 }
     )
   }

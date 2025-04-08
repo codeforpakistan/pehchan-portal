@@ -57,7 +57,9 @@ export async function middleware(request: NextRequest) {
     '/_next',
     '/favicon.ico',
     '/sso-integration/test.html',
-    '/sso-integration/callback.html'
+    '/sso-integration/callback.html',
+    '/developer-docs',
+    '/developer-docs/'
   ]
 
   // Get auth tokens

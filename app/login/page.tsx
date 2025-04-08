@@ -25,23 +25,34 @@ export default function LoginPage() {
   const clientId = searchParams.get('client_id')
   const redirectUri = searchParams.get('redirect_uri')
   const serviceName = searchParams.get('service_name')
+  const state = searchParams.get('state')
 
-  // Store client info in session
+  // Store client info in session only if this is an SSO login
   useEffect(() => {
     if (clientId && redirectUri) {
+      console.log('Storing OAuth params:', { clientId, redirectUri, serviceName, state })
       sessionStorage.setItem('oauth_client', JSON.stringify({
         clientId,
         redirectUri,
-        serviceName
+        serviceName,
+        state
       }))
+    } else {
+      // Clear any existing OAuth params for regular login
+      sessionStorage.removeItem('oauth_client')
     }
-  }, [clientId, redirectUri, serviceName])
+  }, [clientId, redirectUri, serviceName, state])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
+      const oauthClient = sessionStorage.getItem('oauth_client')
+      const clientInfo = oauthClient ? JSON.parse(oauthClient) : {}
+
+      console.log('Submitting login with params:', clientInfo)
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -50,8 +61,12 @@ export default function LoginPage() {
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
-          ...(clientId && { clientId }),
-          ...(redirectUri && { redirectUri }),
+          // Only include SSO parameters if this is an SSO login
+          ...(clientInfo.clientId && clientInfo.redirectUri ? {
+            clientId: clientInfo.clientId,
+            redirectUri: clientInfo.redirectUri,
+            state: clientInfo.state
+          } : {})
         }),
       })
 
@@ -61,11 +76,16 @@ export default function LoginPage() {
         throw new Error(data.message || 'Login failed')
       }
 
-      if (data.redirect) {
+      // Clear OAuth params after successful login
+      sessionStorage.removeItem('oauth_client')
+
+      // Only redirect if this is an SSO login
+      if (data.redirect && clientInfo.clientId && clientInfo.redirectUri) {
         window.location.href = data.redirect
         return
       }
 
+      // Regular Pehchan login
       toast({
         title: "Success",
         description: "Logged in successfully",

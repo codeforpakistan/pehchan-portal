@@ -3,10 +3,11 @@ import { KEYCLOAK_CONFIG, KEYCLOAK_URLS } from '@/lib/keycloak-config'
 
 export async function POST(request: Request) {
   try {
-    const { username, password, clientId, redirectUri } = await request.json()
+    const { username, password, clientId, redirectUri, state } = await request.json()
 
-    console.log('Login request:', { username, clientId, redirectUri }) // Debug log
+    console.log('Login request:', { username, clientId, redirectUri, state }) // Debug log
 
+    // Get tokens from Keycloak using password grant
     const tokenResponse = await fetch(KEYCLOAK_URLS.TOKEN, {
       method: 'POST',
       headers: {
@@ -30,14 +31,20 @@ export async function POST(request: Request) {
 
     const tokens = await tokenResponse.json()
 
-    // If this is an SSO login request
-    if (clientId && redirectUri) {
+    // Check if this is an SSO login request
+    const isSsoLogin = clientId && redirectUri
+    console.log('Is SSO login?', isSsoLogin)
+
+    if (isSsoLogin) {
       console.log('Processing SSO redirect to:', redirectUri)
 
       // Create the redirect URL with tokens
       const finalRedirectUrl = new URL(redirectUri)
       finalRedirectUrl.searchParams.set('access_token', tokens.access_token)
       finalRedirectUrl.searchParams.set('id_token', tokens.id_token || '')
+      if (state) {
+        finalRedirectUrl.searchParams.set('state', state)
+      }
       
       return NextResponse.json({ 
         redirect: finalRedirectUrl.toString() 
@@ -45,7 +52,11 @@ export async function POST(request: Request) {
     }
 
     // Regular Pehchan login
-    const response = NextResponse.json({ isAuthenticated: true })
+    console.log('Processing regular Pehchan login')
+    const response = NextResponse.json({ 
+      isAuthenticated: true,
+      message: 'Login successful'
+    })
     
     response.cookies.set('access_token', tokens.access_token, {
       httpOnly: true,

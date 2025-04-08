@@ -8,38 +8,25 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const clientId = searchParams.get('client_id')
     const redirectUri = searchParams.get('redirect_uri')
-    const serviceName = searchParams.get('service_name')
-    
-    if (!clientId || !redirectUri) {
+    const state = searchParams.get('state')
+    const responseType = searchParams.get('response_type')
+
+    // Validate required parameters
+    if (!clientId || !redirectUri || !state || responseType !== 'code') {
       return NextResponse.json(
-        { message: 'Missing required parameters' },
+        { message: 'Invalid request parameters' },
         { status: 400 }
       )
     }
 
-    // Store client information in cookies for later use
-    const cookieStore = cookies()
-    cookieStore.set('oauth_client_id', clientId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 3600 // 1 hour
-    })
-    
-    cookieStore.set('oauth_redirect_uri', redirectUri, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 3600
-    })
+    // Store OAuth parameters in cookies for after login
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.set('oauth_client_id', clientId)
+    response.cookies.set('oauth_redirect_uri', redirectUri)
+    response.cookies.set('oauth_state', state)
 
-    // Redirect to login page with service name
-    const loginUrl = new URL('/login', request.url)
-    if (serviceName) {
-      loginUrl.searchParams.set('service_name', serviceName)
-    }
+    return response
 
-    return NextResponse.redirect(loginUrl)
   } catch (error) {
     console.error('Authorization error:', error)
     return NextResponse.json(

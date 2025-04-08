@@ -44,8 +44,12 @@ export async function middleware(request: NextRequest) {
     '/',
     '/login',
     '/signup',
+    '/verify-email',
+    '/verify-otp',
     '/api/auth',
     '/api/auth/authorize',
+    '/api/auth/token',
+    '/api/auth/userinfo',
     '/api/auth/otp',
     '/api/auth/signup',
     '/forgot-password',
@@ -54,8 +58,11 @@ export async function middleware(request: NextRequest) {
     '/_next',
     '/favicon.ico',
     '/sso-integration/test.html',
-    '/sso-integration/callback.html'
-
+    '/sso-integration/callback.html',
+    '/developer-docs',
+    '/developer-docs/',
+    '/about',
+    '/about/'
   ]
 
   // Get auth tokens
@@ -69,10 +76,12 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/_next/') ||
     request.nextUrl.pathname.startsWith('/images/') ||
     request.nextUrl.pathname.startsWith('/sso-integration/') ||
-    request.nextUrl.pathname.startsWith('/api/auth/')
+    request.nextUrl.pathname.startsWith('/api/auth/') ||
+    // Allow login page with any query parameters
+    (request.nextUrl.pathname === '/login' && request.nextUrl.search)
   )
 
-  console.log('Is public path?', isPublicPath)
+  console.log('Is public path?', isPublicPath, 'Path:', request.nextUrl.pathname, 'Search:', request.nextUrl.search)
 
   // If it's a public path, allow access
   if (isPublicPath) {

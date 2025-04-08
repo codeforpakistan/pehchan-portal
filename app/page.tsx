@@ -42,6 +42,22 @@ export default function IndexPage() {
                 </Link>
                 
               </Button>
+
+              <Button asChild
+                className={buttonVariants({ variant: "ghost", size: "lg", className: "" })}
+              >
+                <Link href="/developer-docs">
+                  Developer Docs
+                </Link>
+              </Button>
+
+              <Button asChild
+                className={buttonVariants({ variant: "ghost", size: "lg", className: "" })}
+              >
+                <Link href="/about">
+                  About Pehchan
+                </Link>
+              </Button>
             </div>
           </div>
           {/* <div className="relative hidden md:block">

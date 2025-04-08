@@ -41,16 +41,22 @@ export async function middleware(request: NextRequest) {
 
   // Add your public paths that should bypass auth
   const publicPaths = [
-    '/images/',
+    '/',
     '/login',
     '/signup',
-    '/',
-    '/api/auth',
-    '/forgot-password',
     '/reset-password',
-    '/auth/2fa-verify',
-    '/_next',
-    '/favicon.ico'
+    '/api/auth/register',
+    '/api/auth/login',
+    '/api/auth/2fa/status',
+    '/api/auth/2fa/setup',
+    '/api/auth/2fa/verify',
+    '/api/auth/validate-reset-token',
+    '/api/auth/reset-password',
+    '/api/auth/forgot-password',
+    '/api/auth/otp',
+    '/api/sso/register',
+    '/test-sso.html',
+    '/auth/callback'
   ]
 
   // Get auth tokens

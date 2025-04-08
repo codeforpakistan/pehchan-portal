@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSO Test Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .token-display {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>SSO Test Client</h1>
+    
+    <button onclick="startSSO()">Start SSO Flow</button>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="tokenInfo" style="display: none;">
+        <h2>Received Tokens</h2>
+        <div>
+            <h3>Access Token:</h3>
+            <div class="token-display" id="accessToken"></div>
+        </div>
+        <div>
+            <h3>ID Token:</h3>
+            <div class="token-display" id="idToken"></div>
+        </div>
+    </div>
+
+    <script>
+        function startSSO() {
+            // Use the client ID as shown in Keycloak
+            const clientId = 'test-client';
+            const redirectUri = 'http://localhost:3000/test-sso.html';
+            const serviceName = 'Test SSO Client';
+            
+            console.log('Starting SSO flow with:', { clientId, redirectUri, serviceName });
+            window.location.href = `http://localhost:3000/login?client_id=${clientId}&redirect_uri=${redirectUri}&service_name=${serviceName}`;
+        }
+
+        // Check for tokens or errors in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+        const idToken = urlParams.get('id_token');
+        const error = urlParams.get('error');
+
+        if (error) {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = `Error: ${error}`;
+        }
+
+        if (accessToken || idToken) {
+            document.getElementById('tokenInfo').style.display = 'block';
+            if (accessToken) document.getElementById('accessToken').textContent = accessToken;
+            if (idToken) document.getElementById('idToken').textContent = idToken;
+        }
+    </script>
+</body>
+</html> 

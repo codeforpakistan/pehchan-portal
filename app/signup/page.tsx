@@ -55,7 +55,10 @@ export default function SignUpPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phoneNumber: normalizedPhone }),
+        body: JSON.stringify({ 
+          phoneNumber: normalizedPhone,
+          email: formData.email // Include email for OTP delivery
+        }),
       })
 
       if (!otpResponse.ok) {
@@ -66,7 +69,7 @@ export default function SignUpPage() {
       setStep('otp')
       toast({
         title: "OTP Sent",
-        description: "Please check your phone for the verification code",
+        description: "Please check your phone and email for the verification code",
       })
     } catch (error) {
       toast({
@@ -95,6 +98,7 @@ export default function SignUpPage() {
         },
         body: JSON.stringify({
           phoneNumber: normalizedPhone,
+          email: formData.email, // Include email for verification
           otp,
         }),
       })
@@ -113,7 +117,7 @@ export default function SignUpPage() {
         body: JSON.stringify({
           ...formData,
           phoneNumber: normalizedPhone, // Use normalized phone number
-          emailVerified: true, // Mark as verified since we've verified phone
+          emailVerified: true, // Mark as verified since we've verified via OTP
         }),
       })
 

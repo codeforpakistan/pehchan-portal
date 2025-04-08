@@ -44,19 +44,18 @@ export async function middleware(request: NextRequest) {
     '/',
     '/login',
     '/signup',
-    '/reset-password',
-    '/api/auth/register',
-    '/api/auth/login',
-    '/api/auth/2fa/status',
-    '/api/auth/2fa/setup',
-    '/api/auth/2fa/verify',
-    '/api/auth/validate-reset-token',
-    '/api/auth/reset-password',
-    '/api/auth/forgot-password',
+    '/api/auth',
+    '/api/auth/authorize',
     '/api/auth/otp',
-    '/api/sso/register',
-    '/test-sso.html',
-    '/auth/callback'
+    '/api/auth/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/auth/2fa-verify',
+    '/_next',
+    '/favicon.ico',
+    '/sso-integration/test.html',
+    '/sso-integration/callback.html'
+
   ]
 
   // Get auth tokens
@@ -68,7 +67,9 @@ export async function middleware(request: NextRequest) {
   const isPublicPath = publicPaths.some(path => 
     request.nextUrl.pathname === path || 
     request.nextUrl.pathname.startsWith('/_next/') ||
-    request.nextUrl.pathname.startsWith('/images/')
+    request.nextUrl.pathname.startsWith('/images/') ||
+    request.nextUrl.pathname.startsWith('/sso-integration/') ||
+    request.nextUrl.pathname.startsWith('/api/auth/')
   )
 
   console.log('Is public path?', isPublicPath)

@@ -3,10 +3,11 @@ import { supabase } from '@/lib/supabase'
 import { sendSMS } from '@/lib/sms'
 import { generateOTP } from '@/lib/utils'
 import { normalizePhoneNumber } from '@/lib/phone'
+import Sendgrid from '@sendgrid/mail'
 
 export async function POST(request: Request) {
   try {
-    const { phoneNumber } = await request.json()
+    const { phoneNumber, email } = await request.json()
 
     if (!phoneNumber) {
       return NextResponse.json(
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
       .from('otp_verification')
       .insert({
         phone_number: normalizedPhone,
+        email: email, // Store email if provided
         otp,
         expires_at: expiresAt,
       })
@@ -37,6 +39,22 @@ export async function POST(request: Request) {
 
     // Send SMS
     await sendSMS(normalizedPhone, `Your verification code is: ${otp}`)
+
+    // Send email if provided
+    if (email) {
+      Sendgrid.setApiKey(process.env.SENDGRID_API_KEY as string)
+      
+      const msg = {
+        to: email,
+        from: 'civicflow@codeforpakistan.org',
+        templateId: 'd-070a0738fac147eb878f87b86eed664c',
+        dynamicTemplateData: {
+          VCODE: otp
+        }
+      }
+      
+      await Sendgrid.send(msg)
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -50,23 +68,23 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { phoneNumber, otp } = await request.json()
+    const { phoneNumber, email, otp } = await request.json()
 
-    if (!phoneNumber || !otp) {
+    if (!otp || (!phoneNumber && !email)) {
       return NextResponse.json(
-        { message: 'Phone number and OTP are required' },
+        { message: 'OTP and either phone number or email are required' },
         { status: 400 }
       )
     }
 
-    // Normalize phone number
-    const normalizedPhone = normalizePhoneNumber(phoneNumber)
+    // Normalize phone number if provided
+    const normalizedPhone = phoneNumber ? normalizePhoneNumber(phoneNumber) : null
 
     // Verify OTP
     const { data, error } = await supabase
       .from('otp_verification')
       .select('*')
-      .eq('phone_number', normalizedPhone)
+      .or(`phone_number.eq.${normalizedPhone},email.eq.${email}`)
       .eq('otp', otp)
       .gt('expires_at', new Date().toISOString())
       .single()

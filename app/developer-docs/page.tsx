@@ -21,7 +21,7 @@ export default function DeveloperDocsPage() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">
-              To get started with Pehchan SSO integration, you'll need to:
+              To get started with Pehchan SSO integration, you&apos;ll need to:
             </p>
             <ol className="list-decimal pl-6 mb-4 space-y-2">
               <li>Request a client ID by emailing <a href="mailto:ali@codeforpakistan.org" className="text-primary hover:underline">ali@codeforpakistan.org</a></li>
@@ -102,7 +102,7 @@ if (state !== 'random-state-string') {
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-semibold mb-2">Fetch User Information</h3>
-                    <p className="mb-2">Use the access token to fetch the user's information:</p>
+                    <p className="mb-2">Use the access token to fetch the user&apos;s information:</p>
                     <div className="bg-muted p-4 rounded-md relative">
                       <pre className="text-sm">
                         {`const userInfo = await fetch('https://pehchan.codeforpakistan.org/api/auth/userinfo', {

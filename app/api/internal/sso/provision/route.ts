@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      clientId: client.clientId,
+      clientId: client.id,
       clientSecret: clientSecret.value,
       realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM,
       authUrl: `${process.env.NEXT_PUBLIC_KEYCLOAK_URL}/realms/${process.env.NEXT_PUBLIC_KEYCLOAK_REALM}/protocol/openid-connect/auth`,

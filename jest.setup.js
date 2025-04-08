@@ -1,12 +1,5 @@
-import '@testing-library/jest-dom'
+const { TextEncoder, TextDecoder } = require('util');
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
-// Mock Next.js router
-jest.mock('next/router', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-  }),
-}))
-
-// Add any other global test setup here 
+require('dotenv').config({ path: '.env.test' }); 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { keycloakAdmin } from '@/lib/keycloak-admin'
+import { supabase } from '@/lib/supabase'
 
 // Helper function to validate and normalize CNIC
 function validateAndNormalizeCNIC(cnic: string): string | null {
@@ -36,13 +37,13 @@ export async function POST(request: Request) {
     }
 
     // Create user in Keycloak using the admin utility
-    const user = await keycloakAdmin.createUser({
+    const keycloakUser = await keycloakAdmin.createUser({
       username: email,
       email,
       firstName,
       lastName,
       enabled: true,
-      emailVerified: false, // Start with email not verified
+      emailVerified: true, // Set to true since we've verified via OTP
       attributes: {
         phoneNumber: [phoneNumber],
         phoneNumberVerified: ['true'], // Mark phone as verified since we've verified via OTP
@@ -57,9 +58,37 @@ export async function POST(request: Request) {
       ],
     })
 
+    // Get the Keycloak user ID
+    const keycloakUserDetails = await keycloakAdmin.getUserByEmail(email)
+    if (!keycloakUserDetails?.id) {
+      throw new Error('Failed to retrieve Keycloak user details')
+    }
+
+    // Create user in Supabase
+    const { data: supabaseUser, error: supabaseError } = await supabase
+      .from('users')
+      .insert({
+        keycloak_id: keycloakUserDetails.id,
+        full_name: `${firstName} ${lastName}`,
+        email: email,
+        phone: phoneNumber,
+        cnic: normalizedCNIC,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (supabaseError) {
+      console.error('Supabase user creation failed:', supabaseError)
+      // Rollback Keycloak user creation
+      await keycloakAdmin.deleteUser(keycloakUserDetails.id)
+      throw new Error('Failed to create user profile')
+    }
+
     return NextResponse.json({ 
       success: true, 
-      userId: user.id,
+      userId: keycloakUserDetails.id,
       message: 'Account created successfully. Please verify your email to complete the setup.'
     })
   } catch (error) {

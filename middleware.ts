@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
     '/',
     '/login',
     '/signup',
+    '/docs',
     '/reset-password',
     '/verify-email',
     '/sso-integration',

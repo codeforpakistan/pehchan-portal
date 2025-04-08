@@ -1,11 +1,34 @@
 import { NextResponse } from 'next/server'
 import { KEYCLOAK_CONFIG, KEYCLOAK_URLS } from '@/lib/keycloak-config'
+import { keycloakAdmin } from '@/lib/keycloak-admin'
 
 export async function POST(request: Request) {
   try {
     const { username, password, clientId, redirectUri } = await request.json()
 
     console.log('Login request:', { username, clientId, redirectUri }) // Debug log
+
+    // If this is an SSO login request, get the client secret
+    let clientSecret = KEYCLOAK_CONFIG.CLIENT_SECRET
+    if (clientId) {
+      try {
+        const clients = await keycloakAdmin.findClient(clientId)
+        if (!clients || clients.length === 0) {
+          console.error('Client not found:', clientId)
+          throw new Error('Invalid client ID')
+        }
+        const client = clients[0]
+        if (!client.secret) {
+          console.error('Client has no secret:', client)
+          throw new Error('Client configuration error')
+        }
+        clientSecret = client.secret
+        console.log('Using client secret for:', clientId)
+      } catch (error) {
+        console.error('Error fetching client:', error)
+        throw new Error('Failed to validate client')
+      }
+    }
 
     const tokenResponse = await fetch(KEYCLOAK_URLS.TOKEN, {
       method: 'POST',
@@ -14,8 +37,8 @@ export async function POST(request: Request) {
       },
       body: new URLSearchParams({
         grant_type: 'password',
-        client_id: KEYCLOAK_CONFIG.CLIENT_ID,
-        client_secret: KEYCLOAK_CONFIG.CLIENT_SECRET!,
+        client_id: clientId || KEYCLOAK_CONFIG.CLIENT_ID,
+        client_secret: clientSecret!,
         username,
         password,
         scope: 'openid profile email'

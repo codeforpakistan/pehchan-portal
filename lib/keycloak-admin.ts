@@ -15,8 +15,8 @@ class KeycloakAdmin {
     try {
       await this.adminClient.auth({
         grantType: 'client_credentials',
-        clientId: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID,
-        clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
+        clientId: process.env.KEYCLOAK_ADMIN_CLIENT_ID || 'admin-cli',
+        clientSecret: process.env.KEYCLOAK_ADMIN_CLIENT_SECRET,
       } as Credentials)
     } catch (error) {
       console.error('Keycloak admin client initialization failed:', error)
@@ -70,6 +70,16 @@ class KeycloakAdmin {
       id: userId,
       realm: process.env.NEXT_PUBLIC_KEYCLOAK_REALM!
     })
+  }
+
+  async createClient(clientConfig: any) {
+    await this.init()
+    return this.adminClient.clients.create(clientConfig)
+  }
+
+  async findClient(clientId: string) {
+    await this.init()
+    return this.adminClient.clients.find({ clientId })
   }
 }
 

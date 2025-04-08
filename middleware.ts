@@ -41,12 +41,11 @@ export async function middleware(request: NextRequest) {
 
   // Add your public paths that should bypass auth
   const publicPaths = [
-    '/images/',
+    '/',
     '/login',
     '/signup',
     '/verify-email',
     '/verify-otp',
-    '/',
     '/api/auth',
     '/api/auth/authorize',
     '/api/auth/token',

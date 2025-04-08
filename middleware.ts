@@ -44,6 +44,8 @@ export async function middleware(request: NextRequest) {
     '/images/',
     '/login',
     '/signup',
+    '/verify-email',
+    '/verify-otp',
     '/',
     '/api/auth',
     '/api/auth/authorize',
@@ -59,7 +61,9 @@ export async function middleware(request: NextRequest) {
     '/sso-integration/test.html',
     '/sso-integration/callback.html',
     '/developer-docs',
-    '/developer-docs/'
+    '/developer-docs/',
+    '/about',
+    '/about/'
   ]
 
   // Get auth tokens

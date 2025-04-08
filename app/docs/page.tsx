@@ -235,46 +235,23 @@ export default function DocsPage() {
         <TabsContent value="sso" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>SSO Client Registration</CardTitle>
-              <CardDescription>Register your application for SSO integration</CardDescription>
+              <CardTitle>SSO Integration</CardTitle>
+              <CardDescription>Integrate Pehchan SSO into your application</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold mb-2">Endpoint</h3>
-                  <code className="bg-muted px-2 py-1 rounded">POST /api/sso/register</code>
+                  <h3 className="font-semibold mb-2">Getting Started</h3>
+                  <p className="text-muted-foreground mb-4">
+                    To integrate with Pehchan SSO, you need to:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
+                    <li>Contact Pehchan support to register your application</li>
+                    <li>Provide your application's redirect URI(s)</li>
+                    <li>Receive your client credentials (Client ID and Client Secret)</li>
+                  </ol>
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Request Body</h3>
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                    {JSON.stringify({
-                      clientName: "Your App Name",
-                      redirectUris: ["https://your-app.com/callback"],
-                      allowedOrigins: ["https://your-app.com"]
-                    }, null, 2)}
-                  </pre>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Response</h3>
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                    {JSON.stringify({
-                      clientId: "your-client-id",
-                      clientSecret: "your-client-secret",
-                      redirectUris: ["https://your-app.com/callback"]
-                    }, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>SSO Login Flow</CardTitle>
-              <CardDescription>Implement the SSO login flow in your application</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2">1. Initiate Login</h3>
                   <code className="bg-muted px-2 py-1 rounded">

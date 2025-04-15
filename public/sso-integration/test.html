@@ -84,7 +84,7 @@
         <p>Here's how to integrate Pehchan SSO in your application:</p>
         <pre>
 // 1. Redirect users to Pehchan login page
-const authUrl = new URL('http://localhost:3000/login')
+const authUrl = new URL('https://pehchan.codeforpakistan.org/login')
 authUrl.searchParams.append('client_id', 'test-client')
 authUrl.searchParams.append('redirect_uri', 'http://your-app.com/auth/callback')
 authUrl.searchParams.append('state', 'random-state-string')
@@ -103,7 +103,7 @@ if (state !== 'random-state-string') {
 }
 
 // 3. Use the access token to make authenticated requests
-const userInfo = await fetch('http://localhost:3000/api/auth/userinfo', {
+const userInfo = await fetch('https://pehchan.codeforpakistan.org/api/auth/userinfo', {
   headers: {
     'Authorization': `Bearer ${accessToken}`
   }
@@ -113,10 +113,17 @@ const userInfo = await fetch('http://localhost:3000/api/auth/userinfo', {
         <div id="result" class="result" style="display: none;">
             <h3>Result</h3>
             <pre id="resultContent"></pre>
+            <button class="button" onclick="fetchUserInfo()" id="fetchUserInfoBtn">Fetch User Info</button>
+            <div id="userInfoResult" style="display: none; margin-top: 1rem;">
+                <h3>User Info</h3>
+                <pre id="userInfoContent"></pre>
+            </div>
         </div>
     </div>
 
     <script>
+        let currentAccessToken = null;
+
         function startLogin() {
             const clientId = document.getElementById('clientId').value
             const redirectUri = document.getElementById('redirectUri').value
@@ -131,7 +138,7 @@ const userInfo = await fetch('http://localhost:3000/api/auth/userinfo', {
             localStorage.setItem('oauth_state', state)
 
             // Build the authorization URL
-            const authUrl = new URL('http://localhost:3000/login')
+            const authUrl = new URL('https://pehchan.codeforpakistan.org/login')
             authUrl.searchParams.append('client_id', clientId)
             authUrl.searchParams.append('redirect_uri', redirectUri)
             authUrl.searchParams.append('state', state)
@@ -148,6 +155,7 @@ const userInfo = await fetch('http://localhost:3000/api/auth/userinfo', {
         const savedState = localStorage.getItem('oauth_state')
 
         if (accessToken && state && state === savedState) {
+            currentAccessToken = accessToken;
             document.getElementById('result').style.display = 'block'
             document.getElementById('resultContent').textContent = JSON.stringify({
                 access_token: accessToken,
@@ -155,6 +163,31 @@ const userInfo = await fetch('http://localhost:3000/api/auth/userinfo', {
                 state: state
             }, null, 2)
             localStorage.removeItem('oauth_state')
+        }
+
+        async function fetchUserInfo() {
+            if (!currentAccessToken) {
+                alert('No access token available. Please login first.');
+                return;
+            }
+
+            try {
+                const response = await fetch('https://pehchan.codeforpakistan.org/api/auth/userinfo', {
+                    headers: {
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const userInfo = await response.json();
+                document.getElementById('userInfoResult').style.display = 'block';
+                document.getElementById('userInfoContent').textContent = JSON.stringify(userInfo, null, 2);
+            } catch (error) {
+                alert('Error fetching user info: ' + error.message);
+            }
         }
     </script>
 </body>

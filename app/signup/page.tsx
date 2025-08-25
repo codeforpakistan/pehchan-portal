@@ -1,40 +1,68 @@
 "use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
+
+import { normalizePhoneNumber } from "@/lib/phone"
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
-import { normalizePhoneNumber } from '@/lib/phone'
+
+type Step = "form" | "otp"
 
 export default function SignUpPage() {
   const router = useRouter()
   const { toast } = useToast()
+
   const [isLoading, setIsLoading] = useState(false)
-  const [step, setStep] = useState<'form' | 'otp'>('form')
+  const [step, setStep] = useState<Step>("form")
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
-    cnic: '',
-    password: '',
-    confirmPassword: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    cnic: "",
+    password: "",
+    confirmPassword: "",
   })
-  const [otp, setOtp] = useState('')
+  const [otp, setOtp] = useState("")
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  // --- New: Check email before sending OTP ---
+  const checkEmailExists = async (email: string) => {
+    const res = await fetch("/api/auth/check-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+
+    if (!res.ok) {
+      // If the API itself failed, surface the message
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err?.message || "Failed to validate email")
+    }
+
+    const data = await res.json()
+    return Boolean(data?.exists)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
     try {
       // Validate passwords match
       if (formData.password !== formData.confirmPassword) {
@@ -46,36 +74,48 @@ export default function SignUpPage() {
         return
       }
 
+      // Step-1: Check if email already exists (block before OTP)
+      const emailInUse = await checkEmailExists(formData.email.trim())
+      if (emailInUse) {
+        toast({
+          variant: "destructive",
+          title: "Email already in use",
+          description:
+            "This email is already registered. Try logging in or use a different email.",
+        })
+        return // stop here, do NOT send OTP
+      }
+
       // Normalize phone number
       const normalizedPhone = normalizePhoneNumber(formData.phoneNumber)
 
       // Send OTP
-      const otpResponse = await fetch('/api/auth/otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
+      const otpResponse = await fetch("/api/auth/otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           phoneNumber: normalizedPhone,
-          email: formData.email // Include email for OTP delivery
+          email: formData.email, // Include email for OTP delivery
         }),
       })
 
       if (!otpResponse.ok) {
-        const error = await otpResponse.json()
-        throw new Error(error.message || 'Failed to send OTP')
+        const error = await otpResponse.json().catch(() => ({}))
+        throw new Error(error?.message || "Failed to send OTP")
       }
 
-      setStep('otp')
+      setStep("otp")
       toast({
         title: "OTP Sent",
-        description: "Please check your phone and email for the verification code",
+        description:
+          "Please check your phone and email for the verification code",
       })
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send OTP",
+        description:
+          error instanceof Error ? error.message : "Failed to send OTP",
       })
     } finally {
       setIsLoading(false)
@@ -85,57 +125,53 @@ export default function SignUpPage() {
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
     try {
       // Normalize phone number
       const normalizedPhone = normalizePhoneNumber(formData.phoneNumber)
 
       // Verify OTP
-      const verifyResponse = await fetch('/api/auth/otp', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const verifyResponse = await fetch("/api/auth/otp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phoneNumber: normalizedPhone,
-          email: formData.email, // Include email for verification
+          email: formData.email,
           otp,
         }),
       })
 
       if (!verifyResponse.ok) {
-        const error = await verifyResponse.json()
-        throw new Error(error.message || 'Failed to verify OTP')
+        const error = await verifyResponse.json().catch(() => ({}))
+        throw new Error(error?.message || "Failed to verify OTP")
       }
 
-      // Create user in Keycloak
-      const signupResponse = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Create user in Keycloak (and Supabase)
+      const signupResponse = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          phoneNumber: normalizedPhone, // Use normalized phone number
-          emailVerified: true, // Mark as verified since we've verified via OTP
+          phoneNumber: normalizedPhone,
+          emailVerified: true, // we verified via OTP
         }),
       })
 
       if (!signupResponse.ok) {
-        const error = await signupResponse.json()
-        throw new Error(error.message || 'Failed to create account')
+        const error = await signupResponse.json().catch(() => ({}))
+        throw new Error(error?.message || "Failed to create account")
       }
 
       toast({
         title: "Success",
         description: "Account created successfully! Please login.",
       })
-      router.push('/login')
+      router.push("/login")
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create account",
+        description:
+          error instanceof Error ? error.message : "Failed to create account",
       })
     } finally {
       setIsLoading(false)
@@ -151,8 +187,9 @@ export default function SignUpPage() {
             Enter your information to create your account
           </CardDescription>
         </CardHeader>
+
         <CardContent>
-          {step === 'form' ? (
+          {step === "form" ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -176,6 +213,7 @@ export default function SignUpPage() {
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -187,6 +225,7 @@ export default function SignUpPage() {
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Phone Number</Label>
                 <Input
@@ -199,6 +238,7 @@ export default function SignUpPage() {
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="cnic">CNIC</Label>
                 <Input
@@ -210,6 +250,7 @@ export default function SignUpPage() {
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -221,6 +262,7 @@ export default function SignUpPage() {
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
@@ -232,6 +274,7 @@ export default function SignUpPage() {
                   required
                 />
               </div>
+
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Send Verification Code
@@ -250,6 +293,7 @@ export default function SignUpPage() {
                   required
                 />
               </div>
+
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Verify and Create Account
@@ -257,10 +301,15 @@ export default function SignUpPage() {
             </form>
           )}
         </CardContent>
+
         <CardFooter>
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Button variant="link" className="p-0" onClick={() => router.push('/login')}>
+            <Button
+              variant="link"
+              className="p-0"
+              onClick={() => router.push("/login")}
+            >
               Login
             </Button>
           </p>

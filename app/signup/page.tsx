@@ -36,8 +36,8 @@ export default function SignUpPage() {
     confirmPassword: "",
   })
   const [otp, setOtp] = useState("")
+  const [demoOtp, setDemoOtp] = useState("") // demo OTP
 
-  // ✅ errors state
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,50 +45,31 @@ export default function SignUpPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // ✅ Validation rules
   const validateField = (name: string, value: string) => {
     let message = ""
 
-    if (name === "firstName" && !value.trim()) {
+    if (name === "firstName" && !value.trim())
       message = "First name is required"
-    }
-
-    if (name === "lastName" && !value.trim()) {
-      message = "Last name is required"
-    }
-
+    if (name === "lastName" && !value.trim()) message = "Last name is required"
     if (name === "email") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(value)) {
+      if (!emailRegex.test(value))
         message = "Please enter a valid email address"
-      }
     }
-
     if (name === "phoneNumber") {
       const phoneRegex = /^(\+92|0092|92|0)?3[0-9]{9}$/
-      if (!phoneRegex.test(value)) {
+      if (!phoneRegex.test(value))
         message = "Enter a valid Pakistani phone number"
-      }
     }
-
     if (name === "cnic") {
       const cnicRegex = /^\d{13}$/
-      if (!cnicRegex.test(value.replace(/\D/g, ""))) {
+      if (!cnicRegex.test(value.replace(/\D/g, "")))
         message = "CNIC must be 13 digits"
-      }
     }
-
-    if (name === "password") {
-      if (value.length < 6) {
-        message = "Password must be at least 6 characters"
-      }
-    }
-
-    if (name === "confirmPassword") {
-      if (value !== formData.password) {
-        message = "Passwords do not match"
-      }
-    }
+    if (name === "password" && value.length < 6)
+      message = "Password must be at least 6 characters"
+    if (name === "confirmPassword" && value !== formData.password)
+      message = "Passwords do not match"
 
     setErrors((prev) => ({ ...prev, [name]: message }))
   }
@@ -98,29 +79,28 @@ export default function SignUpPage() {
     validateField(name, value)
   }
 
-  // --- API: Check email before OTP ---
   const checkEmailExists = async (email: string) => {
     const res = await fetch("/api/auth/signup?action=check-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     })
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err?.message || "Failed to validate email")
     }
-
     const data = await res.json()
     return Boolean(data?.exists)
   }
 
-  // --- Form submit (send OTP) ---
+  const generateDemoOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     try {
-      // Check all validations first
       Object.entries(formData).forEach(([key, value]) =>
         validateField(key, value)
       )
@@ -130,6 +110,7 @@ export default function SignUpPage() {
           title: "Validation Error",
           description: "Please fix the highlighted errors",
         })
+        setIsLoading(false)
         return
       }
 
@@ -139,10 +120,10 @@ export default function SignUpPage() {
           title: "Error",
           description: "Passwords do not match",
         })
+        setIsLoading(false)
         return
       }
 
-      // Check if email already exists
       const emailInUse = await checkEmailExists(formData.email.trim())
       if (emailInUse) {
         toast({
@@ -151,13 +132,12 @@ export default function SignUpPage() {
           description:
             "This email is already registered. Try logging in or use a different email.",
         })
+        setIsLoading(false)
         return
       }
 
-      // Normalize phone
       const normalizedPhone = normalizePhoneNumber(formData.phoneNumber)
 
-      // Send OTP
       const otpResponse = await fetch("/api/auth/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -166,13 +146,14 @@ export default function SignUpPage() {
           email: formData.email,
         }),
       })
-
       if (!otpResponse.ok) {
         const error = await otpResponse.json().catch(() => ({}))
         throw new Error(error?.message || "Failed to send OTP")
       }
 
+      setDemoOtp(generateDemoOTP())
       setStep("otp")
+
       toast({
         title: "OTP Sent",
         description:
@@ -190,7 +171,6 @@ export default function SignUpPage() {
     }
   }
 
-  // --- Verify OTP and Signup ---
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -206,7 +186,6 @@ export default function SignUpPage() {
           otp,
         }),
       })
-
       if (!verifyResponse.ok) {
         const error = await verifyResponse.json().catch(() => ({}))
         throw new Error(error?.message || "Failed to verify OTP")
@@ -221,7 +200,6 @@ export default function SignUpPage() {
           emailVerified: true,
         }),
       })
-
       if (!signupResponse.ok) {
         const error = await signupResponse.json().catch(() => ({}))
         throw new Error(error?.message || "Failed to create account")
@@ -257,8 +235,8 @@ export default function SignUpPage() {
         <CardContent>
           {step === "form" ? (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Grid for first & last name */}
               <div className="grid grid-cols-2 gap-4">
-                {/* First Name */}
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
@@ -274,7 +252,7 @@ export default function SignUpPage() {
                     <p className="text-red-500 text-sm">{errors.firstName}</p>
                   )}
                 </div>
-                {/* Last Name */}
+
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
@@ -398,10 +376,13 @@ export default function SignUpPage() {
                   id="otp"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter 6-digit code"
+                  placeholder={`Enter 6-digit code (demo: ${demoOtp})`}
                   maxLength={6}
                   required
                 />
+                <p className="text-sm text-muted-foreground">
+                  Demo OTP is for guidance only. Do NOT use it to verify.
+                </p>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>

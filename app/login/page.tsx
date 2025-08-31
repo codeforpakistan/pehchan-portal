@@ -1,45 +1,45 @@
 "use client"
 
-export const dynamic = 'force-dynamic'
-export const runtime = 'edge'
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 
-
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import Link from 'next/link'
+
+export const dynamic = "force-dynamic"
+export const runtime = "edge"
 
 export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-  })
-  const searchParams = useSearchParams()
-  const clientId = searchParams.get('client_id')
-  const redirectUri = searchParams.get('redirect_uri')
-  const serviceName = searchParams.get('service_name')
-  const state = searchParams.get('state')
+  const [formData, setFormData] = useState({ username: "", password: "" })
 
-  // Store client info in session only if this is an SSO login
+  const searchParams = useSearchParams()
+  const clientId = searchParams.get("client_id")
+  const redirectUri = searchParams.get("redirect_uri")
+  const serviceName = searchParams.get("service_name")
+  const state = searchParams.get("state")
+
   useEffect(() => {
     if (clientId && redirectUri) {
-      console.log('Storing OAuth params:', { clientId, redirectUri, serviceName, state })
-      sessionStorage.setItem('oauth_client', JSON.stringify({
-        clientId,
-        redirectUri,
-        serviceName,
-        state
-      }))
+      sessionStorage.setItem(
+        "oauth_client",
+        JSON.stringify({ clientId, redirectUri, serviceName, state })
+      )
     } else {
-      // Clear any existing OAuth params for regular login
-      sessionStorage.removeItem('oauth_client')
+      sessionStorage.removeItem("oauth_client")
     }
   }, [clientId, redirectUri, serviceName, state])
 
@@ -48,55 +48,52 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const oauthClient = sessionStorage.getItem('oauth_client')
+      const oauthClient = sessionStorage.getItem("oauth_client")
       const clientInfo = oauthClient ? JSON.parse(oauthClient) : {}
 
-      console.log('Submitting login with params:', clientInfo)
-
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
-          // Only include SSO parameters if this is an SSO login
-          ...(clientInfo.clientId && clientInfo.redirectUri ? {
-            clientId: clientInfo.clientId,
-            redirectUri: clientInfo.redirectUri,
-            state: clientInfo.state
-          } : {})
+          ...(clientInfo.clientId && clientInfo.redirectUri
+            ? {
+                clientId: clientInfo.clientId,
+                redirectUri: clientInfo.redirectUri,
+                state: clientInfo.state,
+              }
+            : {}),
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
+        const message =
+          typeof data?.message === "string"
+            ? data.message
+            : "Login failed. Please try again."
+        throw new Error(message)
       }
 
-      // Clear OAuth params after successful login
-      sessionStorage.removeItem('oauth_client')
+      sessionStorage.removeItem("oauth_client")
 
-      // Only redirect if this is an SSO login
       if (data.redirect && clientInfo.clientId && clientInfo.redirectUri) {
         window.location.href = data.redirect
         return
       }
 
-      // Regular Pehchan login
-      toast({
-        title: "Success",
-        description: "Logged in successfully",
-      })
-      router.push('/dashboard')
-
-    } catch (error) {
+      toast({ title: "Success", description: data.message })
+      router.push("/dashboard")
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Login failed",
+        title: "Login Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
       })
     } finally {
       setIsLoading(false)
@@ -108,11 +105,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center">
-            {serviceName ? (
-              <>Login to access {serviceName}</>
-            ) : (
-              <>Login to Pehchan</>
-            )}
+            {serviceName
+              ? `Login to access ${serviceName}`
+              : "Login to Pehchan"}
           </CardTitle>
           {clientId && (
             <CardDescription className="text-center">
@@ -128,10 +123,9 @@ export default function LoginPage() {
                 id="username"
                 type="text"
                 value={formData.username}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  username: e.target.value
-                }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, username: e.target.value }))
+                }
                 required
               />
             </div>
@@ -141,20 +135,22 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  password: e.target.value
-                }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, password: e.target.value }))
+                }
                 required
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
-              Login
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Logging in..." : "Login"}
             </Button>
             <div className="text-center text-sm mt-4">
-              <Link href="/forgot-password" className="text-primary hover:underline">
+              <Link
+                href="/forgot-password"
+                className="text-primary hover:underline"
+              >
                 Forgot your password?
               </Link>
             </div>
